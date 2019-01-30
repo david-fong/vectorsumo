@@ -9,14 +9,18 @@ class Matrix(list):
     nrows: int
     ncols: int
 
-    def __init__(self, m: [[], ]):
+    def __init__(self, columns: [[], ], usrfmt=True):
         """
         Requires that all elements of m
         are lists of equal length.
         """
-        self.ncols = len(m)
-        self.nrows = len(m[0])
-        super().__init__(m)
+        self.ncols = len(columns)
+        self.nrows = len(columns[0])
+        super().__init__(columns)
+        if usrfmt:
+            t = self.transform()
+            self.clear()
+            self.extend(t)
 
     def __iadd__(self, other):
         """
@@ -50,10 +54,13 @@ class Matrix(list):
             for r in range(self.nrows):
                 sum_col.append(self[c][r] + other[c][r])
             sum_mtx.append(sum_col)
-        return Matrix(sum_mtx)
+        return Matrix(sum_mtx, usrfmt=False)
 
     def transform(self):
-        pass  # TODO:
+        t = []
+        for r in range(self.nrows):
+            t.append([self[c][r] for c in range(self.ncols)])
+        return Matrix(t, usrfmt=False)
 
     def det(self):
         pass  # TODO
@@ -69,15 +76,15 @@ class Matrix(list):
         if (isinstance(other, Matrix) and
                 self.ncols is other.nrows):
             prod = []
-            for r in range(self.nrows):
-                row = []
-                for c in range(other.ncols):
+            for c in range(other.ncols):
+                col = []
+                for r in range(self.nrows):
                     entry = 0
                     for i in range(self.ncols):
                         entry += self[i][r] * other[c][i]
-                    row.append(entry)
-                prod.append(row)
-            return Matrix(prod)
+                    col.append(entry)
+                prod.append(col)
+            return Matrix(prod, usrfmt=False)
         else:
             return NotImplemented
 
@@ -88,19 +95,22 @@ class Matrix(list):
         """
         if isinstance(other, Number):
             m = []
-            for r in range(self.nrows):
-                m.append([e * other for e in self[r]])
-            return Matrix(m)
+            for c in range(self.ncols):
+                m.append([e * other for e in self[c]])
+            return Matrix(m, usrfmt=False)
         else:
             return NotImplemented
 
     def __str__(self):
         s = ''
-        maximum = max(map(lambda r: max(r), self))
+        maximum = max(map(lambda c: max(c), self))
         width = int(ceil(log10(maximum)))
-        for row in self:
-            rs = ', '.join(map(lambda x: ('%1.2f' % x).zfill(width), row))
+
+        for row in self.transform():
+            rs = ', '.join(map(
+                lambda x: ('%1.2f' % x).rjust(width + 3), row))
             s += '[%s]\n' % rs
+        return s
 
 
 class Vector(Matrix):
@@ -115,7 +125,7 @@ class Vector(Matrix):
         """
         for e in v:
             assert isinstance(e, Number)
-        super().__init__([v])
+        super().__init__([v, ], usrfmt=False)
 
     def norm(self):
         """
@@ -163,3 +173,10 @@ class Vector(Matrix):
         prod = [self[0][i] * other[0][i]
                 for i in range(self.nrows)]
         return Vector(prod)
+
+
+vec = Vector([0, 1, 2, 3])
+mtx = Matrix([[0, 11],   # [0, 11]
+              [2,  3]])  # [2,  3]
+print(str(5 * vec))
+print(str(2 * mtx * mtx))
