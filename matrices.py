@@ -1,4 +1,4 @@
-from math import sqrt, pi, ceil, cos, sin
+from math import sqrt, pi, ceil, cos, sin, log10
 from numbers import Number
 
 
@@ -17,10 +17,6 @@ class Matrix(list):
         self.nrows = len(m)
         self.ncols = len(m[0])
         super().__init__(m)
-
-    def __can_add(self, other):
-        return (other.nrows is self.nrows and
-                other.ncols is self.ncols)
 
     def __iadd__(self, other):
         """
@@ -54,10 +50,30 @@ class Matrix(list):
             for c in range(self.ncols):
                 sum_row.append(self[r][c] + other[r][c])
             sum_grid.append(sum_row)
-        return sum_grid
+        return Matrix(sum_grid)
+
+    def transform(self):
+        pass  # TODO:
 
     def __mul__(self, other):
-        if isinstance(other, Matrix):
+        """
+        Returns the matrix multiplication of
+        self and other, if it is valid.
+        """
+        # Matrix crossed by vector:
+        if isinstance(other, Vector):
+            if self.ncols is not other.nrows:
+                return
+            prod = []
+            for r in range(self.nrows):
+                entry = 0
+                for i in range(self.ncols):
+                    entry += self[r][i] * other[i]
+                prod.append(entry)
+            return Vector(prod)
+
+        # Matrix crossed by matrix:
+        elif isinstance(other, Matrix):
             if self.ncols is not other.nrows:
                 return
             prod = []
@@ -70,17 +86,30 @@ class Matrix(list):
                     row.append(entry)
                 prod.append(row)
             return Matrix(prod)
+
         else:
             return NotImplemented
 
     def __rmul__(self, other):
+        """
+        Multiplies this matrix by a leading scalar.
+        Returns the product.
+        """
         if isinstance(other, Number):
             m = []
             for r in range(self.nrows):
                 m.append([e * other for e in self[r]])
-            return m
+            return Matrix(m)
         else:
             return NotImplemented
+
+    def __str__(self):
+        s = ''
+        maximum = max(map(lambda r: max(r), self))
+        width = int(ceil(log10(maximum)))
+        for row in self:
+            rs = ', '.join(map(lambda x: ('%1.2f' % x).zfill(width), row))
+            s += '[%s]\n' % rs
 
 
 class Vector(Matrix):
@@ -94,7 +123,7 @@ class Vector(Matrix):
         *TYPE RESTRICTED TO NUMBER!
         """
         for e in v:
-            assert isinstance(e, (int, float))
+            assert isinstance(e, Number)
         super().__init__(v)
 
     def norm(self):
@@ -133,3 +162,12 @@ class Vector(Matrix):
         o %= 2 * pi
         return rm[self.nrows][axis] * self
 
+    def dot(self, other):
+        """
+        Returns the dot product of this and other
+        """
+        if not isinstance(other, Vector):
+            return
+        prod = []
+        # TODO:
+        return Vector(prod)
