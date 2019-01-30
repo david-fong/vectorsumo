@@ -21,6 +21,8 @@ class Matrix(list):
             t = self.transform()
             self.clear()
             self.extend(t)
+            self.ncols = len(columns)
+            self.nrows = len(columns[0])
 
     def __iadd__(self, other):
         """
