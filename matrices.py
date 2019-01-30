@@ -24,6 +24,9 @@ class Matrix(list):
             self.ncols = len(columns)
             self.nrows = len(columns[0])
 
+    def is_square(self):
+        return self.nrows is self.ncols
+
     def __iadd__(self, other):
         """
         Requires that all respective elements of self
@@ -59,15 +62,26 @@ class Matrix(list):
         return Matrix(sum_mtx, usrfmt=False)
 
     def transform(self):
+        """
+        Reflection of entries along the main diagonal.
+        """
         t = []
         for r in range(self.nrows):
-            t.append([self[c][r] for c in range(self.ncols)])
+            t.append([self[c][r] for c in
+                      range(self.ncols)])
         return Matrix(t, usrfmt=False)
 
     def det(self):
+        if not self.is_square():
+            return
         pass  # TODO
 
+    def reduce(self):
+        pass  # TODO:
+
     def inverse(self):
+        if not self.is_square():
+            return
         pass  # TODO
 
     def __mul__(self, other):
@@ -129,6 +143,9 @@ class Vector(Matrix):
             assert isinstance(e, Number)
         super().__init__([v, ], usrfmt=False)
 
+    def __len__(self):
+        return self.nrows
+
     def norm(self):
         """
         Returns the 'length' of the vector.
@@ -138,8 +155,9 @@ class Vector(Matrix):
 
     def rot(self, o, axis=''):
         """
-        Returns a rotated view of a 2D vector.
-        The rotation is counterclockwise by theta.
+        Returns a rotated view of a vector in space.
+        The rotation is counterclockwise by theta,
+        about the specified axis when relevant.
         """
         rm = {
             2: {
@@ -158,23 +176,38 @@ class Vector(Matrix):
                              [0, 0, 1]])
             }
         }  # Rotation matrices based on size
-        if self.nrows not in rm.keys():
+        if len(self) not in rm.keys():
             return
         if o < 0:
             o = ceil(-o / 2 / pi) * 2 * pi + o
         o %= 2 * pi
-        return rm[self.nrows][axis] * self
+        return rm[len(self)][axis] * self
+
+    def transform(self):
+        """Do not allow transforms on vectors."""
+        pass
 
     def dot(self, other):
         """
-        Returns the dot product of this and other
+        If the vectors are of equal vector length,
+        Returns the dot product of this and other.
         """
-        if (not isinstance(other, Vector) or
-                self.nrows is not other.nrows):
-            return
-        prod = [self[0][i] * other[0][i]
-                for i in range(self.nrows)]
-        return Vector(prod)
+        if (isinstance(other, Vector) and
+                len(self) is len(other)):
+            prod = [self[0][i] * other[0][i]
+                    for i in range(len(self))]
+            return Vector(prod)
+        else:
+            return NotImplemented
+
+    def __mul__(self, other):
+        """Vector cross product"""
+        if (isinstance(other, Vector) and
+                len(self) is 3 and
+                len(self) is len(other)):
+            pass  # TODO:
+        else:
+            return NotImplemented
 
 
 vec = Vector([0, 1, 2, 3])
