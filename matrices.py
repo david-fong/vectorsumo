@@ -4,7 +4,7 @@ from numbers import Number
 
 class Matrix(list):
     """
-    A matrix
+    A matrix. A list of equal-length columns.
     """
     nrows: int
     ncols: int
@@ -14,8 +14,8 @@ class Matrix(list):
         Requires that all elements of m
         are lists of equal length.
         """
-        self.nrows = len(m)
-        self.ncols = len(m[0])
+        self.ncols = len(m)
+        self.nrows = len(m[0])
         super().__init__(m)
 
     def __iadd__(self, other):
@@ -29,9 +29,9 @@ class Matrix(list):
         elif not (other.nrows is self.nrows and
                   other.ncols is self.ncols):
             return
-        for r in range(self.nrows):
-            for c in range(self.ncols):
-                self[r][c] += other[r][c]
+        for c in range(self.ncols):
+            for r in range(self.nrows):
+                self[c][r] += other[c][r]
 
     def __add__(self, other):
         """
@@ -44,49 +44,40 @@ class Matrix(list):
         elif not (other.nrows is self.nrows and
                   other.ncols is self.ncols):
             return
-        sum_grid = []
-        for r in range(self.nrows):
-            sum_row = []
-            for c in range(self.ncols):
-                sum_row.append(self[r][c] + other[r][c])
-            sum_grid.append(sum_row)
-        return Matrix(sum_grid)
+        sum_mtx = []
+        for c in range(self.ncols):
+            sum_col = []
+            for r in range(self.nrows):
+                sum_col.append(self[c][r] + other[c][r])
+            sum_mtx.append(sum_col)
+        return Matrix(sum_mtx)
 
     def transform(self):
         pass  # TODO:
+
+    def det(self):
+        pass  # TODO
+
+    def inverse(self):
+        pass  # TODO
 
     def __mul__(self, other):
         """
         Returns the matrix multiplication of
         self and other, if it is valid.
         """
-        # Matrix crossed by vector:
-        if isinstance(other, Vector):
-            if self.ncols is not other.nrows:
-                return
-            prod = []
-            for r in range(self.nrows):
-                entry = 0
-                for i in range(self.ncols):
-                    entry += self[r][i] * other[i]
-                prod.append(entry)
-            return Vector(prod)
-
-        # Matrix crossed by matrix:
-        elif isinstance(other, Matrix):
-            if self.ncols is not other.nrows:
-                return
+        if (isinstance(other, Matrix) and
+                self.ncols is other.nrows):
             prod = []
             for r in range(self.nrows):
                 row = []
                 for c in range(other.ncols):
                     entry = 0
                     for i in range(self.ncols):
-                        entry += self[r][i] * other[i][c]
+                        entry += self[i][r] * other[c][i]
                     row.append(entry)
                 prod.append(row)
             return Matrix(prod)
-
         else:
             return NotImplemented
 
@@ -124,13 +115,14 @@ class Vector(Matrix):
         """
         for e in v:
             assert isinstance(e, Number)
-        super().__init__(v)
+        super().__init__([v])
 
     def norm(self):
         """
         Returns the 'length' of the vector.
         """
-        return sqrt(sum(map(lambda x: x ** 2, self)))
+        # Equivalent to sqrt(sum(self.dot(self))):
+        return sqrt(sum(map(lambda x: x ** 2, self[0])))
 
     def rot(self, o, axis=''):
         """
@@ -157,8 +149,7 @@ class Vector(Matrix):
         if self.nrows not in rm.keys():
             return
         if o < 0:
-            o = (ceil(-o / (2 * pi)) *
-                 2 * pi + o) % (2 * pi)
+            o = ceil(-o / 2 / pi) * 2 * pi + o
         o %= 2 * pi
         return rm[self.nrows][axis] * self
 
@@ -166,8 +157,9 @@ class Vector(Matrix):
         """
         Returns the dot product of this and other
         """
-        if not isinstance(other, Vector):
+        if (not isinstance(other, Vector) or
+                self.nrows is not other.nrows):
             return
-        prod = []
-        # TODO:
+        prod = [self[0][i] * other[0][i]
+                for i in range(self.nrows)]
         return Vector(prod)
