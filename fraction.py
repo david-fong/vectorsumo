@@ -10,7 +10,7 @@ def factorize(num: int) -> [int, ]:
     list of its prime factors excluding 1
     (unless the number is 1).
     """
-    primes = (2, 3, 5, 7, 9, 13, 17, 19, 23, 29,
+    primes = (2, 3, 5, 7, 9, 11, 13, 17, 19, 23, 29,
               31, 37, 41, 43, 47, 53, 59, 61, 71,
               79, 83, 89, 97, 101, 103, 107, 109,
               113, 127, 131, 137, 139, 149, 151,
@@ -106,8 +106,12 @@ class Fraction:
         # self.denom.sort()
         if 0 in self.numer:
             self.numer = [0, ]
+            self.denom = [1, ]
+            return
         elif 0 in self.denom:
+            # TODO: handle this case in __add___, etc...
             self.denom = [0, ]
+            return
 
         # Eliminate common factors:
         for prime in set(self.numer):
@@ -126,16 +130,17 @@ class Fraction:
 
     def __float__(self) -> float:
         """Public method to get the float value of this fraction."""
-        return self.__numer_val() / self.__denom_val()
+        val = self.numer_prod() / self.denom_prod()
+        return -val if self.neg else val
 
     def __int__(self) -> int:
         """Public method to get the int value of this fraction."""
         return int(float(self))
 
-    def __numer_val(self) -> int:
+    def numer_prod(self) -> int:
         return reduce(mul, self.numer, 1)
 
-    def __denom_val(self) -> int:
+    def denom_prod(self) -> int:
         return reduce(mul, self.denom, 1)
 
     def __repr__(self) -> str:
@@ -145,9 +150,9 @@ class Fraction:
         elif 0 in self.denom:
             s += 'inf'
         else:
-            s += '%d' % self.__numer_val()
+            s += '%d' % self.numer_prod()
             if 1 not in self.denom:
-                s += '/%d' % self.__denom_val()
+                s += '/%d' % self.denom_prod()
         return s
 
     def __neg__(self):

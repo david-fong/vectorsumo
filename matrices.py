@@ -146,23 +146,28 @@ class Matrix(list):
         """
         if isinstance(other, Number):
             m = []
-            for c in range(self.ncols):
-                m.append([e * other for e in self[c]])
+            for r in range(self.nrows):
+                m.append(other * self[r])
             return Matrix(m)
         else:
             return NotImplemented
 
+    @property
     def __str__(self):
         s = ''
-        max_numer = max(map(lambda c: max(c.__numer_val), self))
-        max_denom = max(map(lambda c: max(c.__denom_val), self))
-        width = int(ceil(log10(max_numer))) + \
-            int(ceil(log10(max_denom)))
+        numer = []
+        denom = []
+        for vec in self:
+            numer.extend(vec)
+            denom.extend(vec)
+        numer = max(map(Fraction.numer_prod, numer))
+        denom = max(map(Fraction.denom_prod, denom))
+        width = int(ceil(log10(numer))) + \
+            int(ceil(log10(denom)))
 
         for row in self:
             rs = ', '.join(map(
-                lambda v: ('%1.2s' % str(v))
-                .center(width + 2), row)
+                lambda f: f.__str__().center(5 + 2), row)
             )
             s += '[%s]\n' % rs
         return s
@@ -271,12 +276,13 @@ class Vector(list):
             return NotImplemented
 
 
-vec = Vector([0, 1, 2, 3])
-mtx = Matrix([[0, 11],  # [0, 11]
+vec1 = Vector([0, 0.5, 2, 3])
+mtx = Matrix([[0, 4.5],  # [0, 11]
               [2, 3]])  # [2,  3]
-frac = Fraction(1)
-print(frac.numer, frac.denom)
-print(vec)
-print(str(5 * vec))
-print(str(2 * mtx * mtx))
+frac1 = Fraction(4.5)
+print(frac1, frac1.numer, frac1.denom)
+print(vec1)
+print(5 * vec1)
+print(2 * mtx)
+print(2 * mtx * mtx)
 print((2 * mtx * mtx).det(), 44 * 62 - 66 * 12)
