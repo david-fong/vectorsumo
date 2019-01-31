@@ -1,9 +1,7 @@
 from functools import reduce
-from math import modf
+from math import floor
 from numbers import Number
 from operator import mul
-
-TEN = (2, 5)
 
 
 def factorize(num: int) -> [int, ]:
@@ -22,7 +20,7 @@ def factorize(num: int) -> [int, ]:
     if num is 1:
         return [1, ]
     for prime in primes:
-        if prime >= num:
+        if prime > num:
             break
         while num % prime is 0:
             factors.append(prime)
@@ -63,6 +61,13 @@ class Fraction:
         if empty:
             return
 
+        # If copy constructing another Fraction:
+        if isinstance(numer, Fraction):
+            self.numer = numer.numer
+            self.denom = numer.denom
+            self.neg = numer.neg
+            return
+
         # If initialized with a decimal value:
         if isinstance(numer, float):
             if numer is 0.0:
@@ -73,11 +78,11 @@ class Fraction:
                     numer = abs(numer)
                     self.neg = True
                 cmp = 0
-                while (10 ** cmp) < (1 / modf(numer)[0]):
+                while (10 ** cmp) < (1 / (numer - int(floor(numer)))):
                     cmp += 1
-                numer = int(round(numer * (10 ** cmp), 0))
-                self.denom = ([2, ] * cmp) + ([5, ] * cmp)
+                numer = int(round(numer * (10 ** cmp)))
                 self.numer = factorize(numer)
+                self.denom = [2, 5] * cmp
 
         # If initialized with a numerator and denominator:
         elif isinstance(numer, int) and isinstance(denom, int):
@@ -114,6 +119,11 @@ class Fraction:
                 self.numer.remove(prime)
                 self.denom.remove(prime)
 
+        if len(self.numer) is 0:
+            self.numer = [1, ]
+        if len(self.denom) is 0:
+            self.denom = [1, ]
+
     def __float__(self) -> float:
         """Public method to get the float value of this fraction."""
         return self.__numer_val() / self.__denom_val()
@@ -129,14 +139,14 @@ class Fraction:
         return reduce(mul, self.denom, 1)
 
     def __repr__(self) -> str:
-        s = '-' if self.neg else ' '
+        s = '-' if self.neg else ''
         if 0 in self.numer:
             s += '0'
         elif 0 in self.denom:
             s += 'inf'
         else:
             s += '%d' % self.__numer_val()
-            if self.denom is not 1:
+            if 1 not in self.denom:
                 s += '/%d' % self.__denom_val()
         return s
 

@@ -1,29 +1,24 @@
 from math import sqrt, pi, ceil, cos, sin, log10
 from numbers import Number
 
+from fraction import Fraction
+
 
 class Matrix(list):
     """
     A matrix. A list of equal-length columns.
     """
-    self: [[Number, ], ]
     nrows: int
     ncols: int
 
-    def __init__(self, columns: [[], ], usrfmt=True):
+    def __init__(self, rows: [[], ]):
         """
         Requires that all elements of m
         are lists of equal length.
         """
-        self.ncols = len(columns)
-        self.nrows = len(columns[0])
-        super().__init__(columns)
-        if usrfmt:
-            t = self.transform()
-            self.clear()
-            self.extend(t)
-            self.ncols = len(columns)
-            self.nrows = len(columns[0])
+        self.nrows = len(rows)
+        self.ncols = len(rows[0])
+        super().__init__([Vector(row) for row in rows])
 
     def is_square(self):
         return self.nrows is self.ncols
@@ -34,14 +29,15 @@ class Matrix(list):
         and other are instances of the same type.
         """
         # check if matrix addition is valid
-        if not isinstance(other, Matrix):
-            return NotImplemented
-        elif not (other.nrows is self.nrows and
-                  other.ncols is self.ncols):
-            return
-        for c in range(self.ncols):
+        if isinstance(other, Matrix):
+            if not (other.nrows is self.nrows and
+                    other.ncols is self.ncols):
+                raise MatrixSizeError('dimensions not equal')
             for r in range(self.nrows):
-                self[c][r] += other[c][r]
+                for c in range(self.ncols):
+                    self[r][c] += other[r][c]
+        else:
+            return NotImplemented
 
     def __add__(self, other):
         """
@@ -49,52 +45,52 @@ class Matrix(list):
         and other are instances of the same type.
         """
         # check if matrix addition is valid
-        if not isinstance(other, Matrix):
-            return NotImplemented
-        elif not (other.nrows is self.nrows and
-                  other.ncols is self.ncols):
-            return
-        sum_mtx = []
-        for c in range(self.ncols):
-            sum_col = []
+        if isinstance(other, Matrix):
+            if not (other.nrows is self.nrows and
+                    other.ncols is self.ncols):
+                raise MatrixSizeError('dimensions not equal')
+            sum_mtx = []
             for r in range(self.nrows):
-                sum_col.append(self[c][r] + other[c][r])
-            sum_mtx.append(sum_col)
-        return Matrix(sum_mtx, usrfmt=False)
+                sum_mtx.append(
+                    [self[r][c] + other[r][c]
+                     for c in range(self.ncols)]
+                )
+            return Matrix(sum_mtx)
+        else:
+            return NotImplemented
 
-    def transform(self):
-        """
-        Reflection of entries along the main diagonal.
-        """
+    def transpose(self):
+        """Reflection of entries along the main diagonal."""
         t = []
-        for r in range(self.nrows):
-            t.append([self[c][r] for c in
-                      range(self.ncols)])
-        return Matrix(t, usrfmt=False)
+        for c in range(self.ncols):
+            t.append([self[r][c] for r in
+                      range(self.nrows)])
+        return Matrix(t)
 
-    def det(self) -> (Number, None):
+    def det(self) -> (Fraction, None):
         """Returns the determinant of this matrix if it is square."""
-        if not self.is_square():
-            return
-        cols = list(range(self.ncols))
-        rows = list(range(self.nrows))
-        return self.__det(cols, rows)
+        if self.is_square():
+            rows = list(range(self.nrows))
+            cols = list(range(self.ncols))
+            return self.__det(rows, cols)
+        else:
+            raise MatrixSizeError('matrix not square.')
 
-    def __det(self, cols: [Number, ], rows: [Number, ]) -> Number:
+    def __det(self, rows: [int, ], cols: [int, ]) -> Fraction:
         """
         Private helper for det(). Recursive function.
         cols and rows are chopped up index slices.
         """
         # Terminating condition:
-        if len(cols) is 1:  # implies len(rows) is 1
-            return self[cols[0]][rows[0]]
+        if len(rows) is 1:  # implies len(rows) is 1
+            return self[rows[0]][cols[0]]
         else:
             det = 0.0
             for i in range(len(cols)):
                 _cols = cols.copy()
                 _cols.remove(i)
                 _det = self[cols[i]][rows[0]]
-                _det *= self.__det(_cols, rows[1:])
+                _det *= self.__det(rows[1:], _cols)
                 if i % 2 is 1:
                     _det *= -1
                 det += _det
@@ -112,22 +108,37 @@ class Matrix(list):
         """
         Returns the matrix multiplication of
         self and other, if it is valid.
+        (Ie. a matrix if other is a matrix,
+             a vector if other is a vector,
+             None if
         """
-        if (isinstance(other, Matrix) and
-                self.ncols is other.nrows):
+        # Matrix multiplied be another matrix:
+        if isinstance(other, Matrix):
+            if self.ncols is not other.nrows:
+                raise MatrixSizeError('op1 #cols != op2 #rows')
             prod = []
-            for c in range(other.ncols):
-                col = []
-                for r in range(self.nrows):
-                    entry = 0
-                    for i in range(self.ncols):
-                        entry += self[i][r] * other[c][i]
-                    col.append(entry)
-                prod.append(col)
-            return Matrix(prod, usrfmt=False)
+            other_t = other.transpose()
+            for r in range(self.nrows):
+                prod.append(
+                    [sum(self[r].dot(c))
+                     for c in other_t]
+                )
+            return Matrix(prod)
+
+        # Matrix multiplied by a vector:
+        elif isinstance(other, Vector):
+            if self.ncols is not len(other):
+                raise MatrixSizeError('op1 #cols != op2 length')
+            return Vector([
+                sum(self[r].dot(other))
+                for r in range(self.nrows)
+            ])
+
+        # Unexpected second operand:
         else:
             return NotImplemented
 
+    # TODO: fix after refactor
     def __rmul__(self, other):
         """
         Multiplies this matrix by a leading scalar.
@@ -137,45 +148,57 @@ class Matrix(list):
             m = []
             for c in range(self.ncols):
                 m.append([e * other for e in self[c]])
-            return Matrix(m, usrfmt=False)
+            return Matrix(m)
         else:
             return NotImplemented
 
     def __str__(self):
         s = ''
-        maximum = max(map(lambda c: max(c), self))
-        width = int(ceil(log10(maximum)))
+        max_numer = max(map(lambda c: max(c.__numer_val), self))
+        max_denom = max(map(lambda c: max(c.__denom_val), self))
+        width = int(ceil(log10(max_numer))) + \
+            int(ceil(log10(max_denom)))
 
-        for row in self.transform():
+        for row in self:
             rs = ', '.join(map(
-                lambda x: ('%1.2f' % x).rjust(width + 3), row))
+                lambda v: ('%1.2s' % str(v))
+                .center(width + 2), row)
+            )
             s += '[%s]\n' % rs
         return s
 
 
-class Vector(Matrix):
+class MatrixSizeError(Exception):
     """
-    A vector
+    Used to raise Arithmetic exceptions when
+    operand matrix sizes are incompatible.
     """
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
+class Vector(list):
+    """
+    A vector. All entries are Fraction objects.
+    """
+
     def __init__(self, v: list):
         """
         Requires that all elements of v
-        are instances of the same type.
-        *TYPE RESTRICTED TO NUMBER!
+        are Numbers. Initialize self with
+        the fraction versions of v's entries.
         """
-        for e in v:
-            assert isinstance(e, Number)
-        super().__init__([v, ], usrfmt=False)
-
-    def __len__(self):
-        return self.nrows
+        v = [Fraction(n) for n in v]
+        super().__init__(v)
 
     def norm(self):
-        """
-        Returns the 'length' of the vector.
-        """
+        """ Returns the 'length' of the vector. """
         # Equivalent to sqrt(sum(self.dot(self))):
-        return sqrt(sum(map(lambda x: x ** 2, self[0])))
+        return sqrt(sum(map(lambda x: x ** 2, self)))
 
     def rot(self, o, axis=''):
         """
@@ -183,7 +206,7 @@ class Vector(Matrix):
         The rotation is counterclockwise by theta,
         about the specified axis when relevant.
         """
-        rm = {
+        rm = {  # TODO: Make this an external dictionary/lambda
             2: {
                 '': Matrix([[cos(o), -sin(o)],
                             [sin(o), cos(o)]])
@@ -208,8 +231,8 @@ class Vector(Matrix):
         return rm[len(self)][axis] * self
 
     def transform(self):
-        """Do not allow transforms on vectors."""
-        pass
+        """Return a [1 x len(self)] matrix"""
+        return Matrix(self)
 
     def dot(self, other):
         """
@@ -218,14 +241,13 @@ class Vector(Matrix):
         """
         if (isinstance(other, Vector) and
                 len(self) is len(other)):
-            prod = [self[0][i] * other[0][i]
-                    for i in range(len(self))]
+            prod = [self[i] * other[i] for i in range(len(self))]
             return Vector(prod)
         else:
-            return NotImplemented
+            raise MatrixSizeError('vector lengths incompatible.')
 
     def __mul__(self, other):
-        """Vector cross product"""
+        """Vector cross product."""
         if (isinstance(other, Vector) and
                 len(self) is 3 and
                 len(self) is len(other)):
@@ -233,12 +255,28 @@ class Vector(Matrix):
             cross = []  # TODO
             return Vector(cross)
         else:
+            raise MatrixSizeError('not vectors of length 3.')
+
+    def __rmul__(self, other):
+        if isinstance(other, Fraction):
+            return Vector([
+                other * entry for entry in self
+            ])
+        elif isinstance(other, Number):
+            f_other = Fraction(other)
+            return Vector([
+                f_other * entry for entry in self
+            ])
+        else:
             return NotImplemented
 
 
 vec = Vector([0, 1, 2, 3])
-mtx = Matrix([[0, 11],   # [0, 11]
-              [2,  3]])  # [2,  3]
+mtx = Matrix([[0, 11],  # [0, 11]
+              [2, 3]])  # [2,  3]
+frac = Fraction(1)
+print(frac.numer, frac.denom)
+print(vec)
 print(str(5 * vec))
 print(str(2 * mtx * mtx))
-print((2 * mtx * mtx).det(), 44*62 - 66*12)
+print((2 * mtx * mtx).det(), 44 * 62 - 66 * 12)
