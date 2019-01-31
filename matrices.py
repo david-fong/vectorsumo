@@ -1,3 +1,4 @@
+from functools import reduce
 from math import sqrt, pi, ceil, cos, sin, log10
 from numbers import Number
 
@@ -120,7 +121,7 @@ class Matrix(list):
             other_t = other.transpose()
             for r in range(self.nrows):
                 prod.append(
-                    [sum(self[r].dot(c))
+                    [reduce(lambda x, y: x + y, self[r].dot(c))
                      for c in other_t]
                 )
             return Matrix(prod)
@@ -138,21 +139,19 @@ class Matrix(list):
         else:
             return NotImplemented
 
-    # TODO: fix after refactor
     def __rmul__(self, other):
         """
         Multiplies this matrix by a leading scalar.
         Returns the product.
         """
         if isinstance(other, Number):
-            m = []
+            prod = []
             for r in range(self.nrows):
-                m.append(other * self[r])
-            return Matrix(m)
+                prod.append(other * self[r])
+            return Matrix(prod)
         else:
             return NotImplemented
 
-    @property
     def __str__(self):
         s = ''
         numer = []
@@ -160,14 +159,15 @@ class Matrix(list):
         for vec in self:
             numer.extend(vec)
             denom.extend(vec)
+        width = 1 if any(lambda frac: frac.neg, numer) else 0
         numer = max(map(Fraction.numer_prod, numer))
         denom = max(map(Fraction.denom_prod, denom))
-        width = int(ceil(log10(numer))) + \
+        width += int(ceil(log10(numer))) + \
             int(ceil(log10(denom)))
 
         for row in self:
             rs = ', '.join(map(
-                lambda f: f.__str__().center(5 + 2), row)
+                lambda f: f.__str__().center(width + 2), row)
             )
             s += '[%s]\n' % rs
         return s
@@ -283,6 +283,8 @@ frac1 = Fraction(4.5)
 print(frac1, frac1.numer, frac1.denom)
 print(vec1)
 print(5 * vec1)
+print(mtx)
+print(mtx * mtx)
 print(2 * mtx)
 print(2 * mtx * mtx)
-print((2 * mtx * mtx).det(), 44 * 62 - 66 * 12)
+#print((2 * mtx * mtx).det(), 44 * 62 - 66 * 12)
