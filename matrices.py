@@ -6,6 +6,7 @@ class Matrix(list):
     """
     A matrix. A list of equal-length columns.
     """
+    self: [[Number, ], ]
     nrows: int
     ncols: int
 
@@ -71,10 +72,33 @@ class Matrix(list):
                       range(self.ncols)])
         return Matrix(t, usrfmt=False)
 
-    def det(self):
+    def det(self) -> (Number, None):
+        """Returns the determinant of this matrix if it is square."""
         if not self.is_square():
             return
-        pass  # TODO
+        cols = list(range(self.ncols))
+        rows = list(range(self.nrows))
+        return self.__det(cols, rows)
+
+    def __det(self, cols: [Number, ], rows: [Number, ]) -> Number:
+        """
+        Private helper for det(). Recursive function.
+        cols and rows are chopped up index slices.
+        """
+        # Terminating condition:
+        if len(cols) is 1:  # implies len(rows) is 1
+            return self[cols[0]][rows[0]]
+        else:
+            det = 0.0
+            for i in range(len(cols)):
+                _cols = cols.copy()
+                _cols.remove(i)
+                _det = self[cols[i]][rows[0]]
+                _det *= self.__det(_cols, rows[1:])
+                if i % 2 is 1:
+                    _det *= -1
+                det += _det
+            return det  # TODO:
 
     def reduce(self):
         pass  # TODO:
@@ -215,3 +239,4 @@ mtx = Matrix([[0, 11],   # [0, 11]
               [2,  3]])  # [2,  3]
 print(str(5 * vec))
 print(str(2 * mtx * mtx))
+print((2 * mtx * mtx).det(), 44*62 - 66*12)

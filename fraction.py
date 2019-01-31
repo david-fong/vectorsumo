@@ -135,8 +135,9 @@ class Fraction:
         elif 0 in self.denom:
             s += 'inf'
         else:
-            s += '%d/%d' % (self.__numer_val(),
-                            self.__denom_val())
+            s += '%d' % self.__numer_val()
+            if self.denom is not 1:
+                s += '/%d' % self.__denom_val()
         return s
 
     def __neg__(self):
