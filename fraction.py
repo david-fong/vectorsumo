@@ -6,7 +6,7 @@ from operator import mul
 TEN = (2, 5)
 
 
-def factorize(num: int):
+def factorize(num: int) -> [int, ]:
     """
     Takes a positive integer and returns a
     list of its prime factors excluding 1
@@ -42,6 +42,10 @@ def __prime_factors(start=2):
 
 
 class Fraction:
+    """
+
+    *Note: Current behaviour undefined for complex numbers.
+    """
     numer: [int, ] = []
     denom: [int, ] = []
     neg: bool = False
@@ -50,8 +54,8 @@ class Fraction:
         """
         A numerator and denominator with a net sign.
         numer and denom are lists of prime factors.
-        If numer is a float, assumes denom is 1.
 
+        If numer is a float, assumes denom is 1.
         The empty parameter should only be used privately.
         """
         # Initialize with no contents:
@@ -110,17 +114,21 @@ class Fraction:
                 self.numer.remove(prime)
                 self.denom.remove(prime)
 
-    def val(self):
+    def __float__(self) -> float:
         """Public method to get the float value of this fraction."""
         return self.__numer_val() / self.__denom_val()
 
-    def __numer_val(self):
+    def __int__(self) -> int:
+        """Public method to get the int value of this fraction."""
+        return int(float(self))
+
+    def __numer_val(self) -> int:
         return reduce(mul, self.numer, 1)
 
-    def __denom_val(self):
+    def __denom_val(self) -> int:
         return reduce(mul, self.denom, 1)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         s = '-' if self.neg else ' '
         if 0 in self.numer:
             s += '0'
@@ -131,11 +139,19 @@ class Fraction:
                             self.__denom_val())
         return s
 
+    def __neg__(self):
+        neg = Fraction(0, empty=True)
+        neg.numer = self.numer.copy()
+        neg.denom = self.denom.copy()
+        neg.neg = ~self.neg
+        return neg
+
     def __add__(self, other):
+        """Returns the sum of this fraction and other."""
         if (isinstance(other, Fraction) and
                 self.denom is not [0, ] and
                 other.denom is not [0, ]):
-            fsum = Fraction(0)
+            fsum = Fraction(0, empty=True)
 
             # Get denominator factors not
             # shared for self and other:
@@ -145,23 +161,38 @@ class Fraction:
                 if factor in ds and factor in do:
                     ds.remove(factor)
                     do.remove(factor)
+
+            numer = \
+                reduce(mul, self.numer + ds, 1) + \
+                reduce(mul, other.numer + do, 1)
+            fsum.numer = factorize(numer)
+            fsum.denom = self.denom + do
+            fsum.neg = numer < 0
+            fsum.simplify()
             return fsum
+
+        elif isinstance(other, Number):
+            return self.__add__(Fraction(other))
         else:
             return NotImplemented
+
+    def __sub__(self, other):
+        """Returns the difference between this fraction and other."""
+        return self + -other
 
     def reciprocal(self):
         """Returns a reciprocal view of this fraction."""
         recip = Fraction(0, empty=True)
-        recip.numer.extend(self.denom)
-        recip.denom.extend(self.numer)
+        recip.numer = self.denom.copy()
+        recip.denom = self.numer.copy()
         return recip
 
     def __mul__(self, other):
         """Returns the product of this and another fraction."""
         if isinstance(other, Fraction):
             prod = Fraction(0, empty=True)
-            prod.numer.extend(self.numer + other.numer)
-            prod.denom.extend(self.denom + other.denom)
+            prod.numer = self.numer + other.numer
+            prod.denom = self.denom + other.denom
             prod.neg = self.neg ^ other.neg
             prod.simplify()
             return prod
@@ -170,11 +201,26 @@ class Fraction:
 
     def __rmul__(self, other):
         """Returns the product of this and a constant."""
-        prod = Fraction(0, empty=True)
+        if isinstance(other, Number):
+            return Fraction(other) * self
+        else:
+            return NotImplemented
 
     def __pow__(self, power, modulo=None):
+        """Returns this fraction to the specified power."""
         fexp = Fraction(0, empty=True)
-        pass  # TODO
+        if power is 0:
+            fexp.numer = [1, ]
+            fexp.denom = [1, ]
+            return fexp
+        elif power < 0:
+            fexp = self.reciprocal()
+            power = abs(power)
+
+        fexp.numer *= power
+        fexp.denom *= power
+        fexp.neg = power % 2 is 1 if self.neg else False
+        return fexp
 
 
 # test = Fraction(4.5)
