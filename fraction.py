@@ -1,4 +1,5 @@
 from functools import reduce
+from math import modf
 from numbers import Number
 from operator import mul
 
@@ -48,11 +49,10 @@ class Fraction(Number):
                     numer = abs(numer)
                     self.neg = True
                 cmp = 0
-                # TODO: Fix this: while 10 ** cmp < (numer)^{-1}?
-                while (10 ** cmp) & numer is not 0:
-                    cmp -= 1
-                numer = int(round(numer * 10 ** -cmp))
-                self.denom = [2, 5] * -cmp
+                while (10 ** cmp) < (1 / modf(numer)[0]):
+                    cmp += 1
+                numer = int(round(numer * (10 ** cmp), 0))
+                self.denom = [2, 5] * cmp
                 self.numer = factorize(numer)
 
         # If initialized with a numerator and denominator:
@@ -108,5 +108,5 @@ class Fraction(Number):
         pass  # TODO
 
 
-test = Fraction(0.5)
+test = Fraction(4.5)
 print(test)
