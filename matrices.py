@@ -98,7 +98,7 @@ class Matrix(list):
                 if i % 2 is 1:
                     _det *= -1
                 det += _det
-            return det  # TODO:
+            return det
 
     def reduce(self):
         pass  # TODO:
@@ -229,7 +229,9 @@ class Vector(Matrix):
         if (isinstance(other, Vector) and
                 len(self) is 3 and
                 len(self) is len(other)):
-            pass  # TODO:
+            mtx = [[1, -1, 1], self[0], other[0]]
+            cross = []  # TODO
+            return Vector(cross)
         else:
             return NotImplemented
 
