@@ -1,3 +1,5 @@
+from numbers import Number
+
 from fraction import Fraction
 
 
@@ -9,8 +11,9 @@ class Monomial(dict):
     """
     coefficient: Fraction
 
-    def __init__(self, **kwargs: _VT):
+    def __init__(self, coefficient: (Number, Fraction), **kwargs: _VT):
         super().__init__(**kwargs)
+        self.coefficient = coefficient
         # TODO
 
     def deg(self):
@@ -39,6 +42,7 @@ class Polynomial:
         pass  # TODO;
 
 
+# just testing syntax:
 monomial_vars = {'x': 2, 'y': 1, 'z': 0}
 for entry in monomial_vars.items():
     print(entry)

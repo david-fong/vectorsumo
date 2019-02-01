@@ -21,6 +21,9 @@ class Matrix(list):
         self.ncols = len(rows[0])
         super().__init__([Vector(row) for row in rows])
 
+    def __setitem__(self, key, value):
+        raise PermissionError('Matrix does not support row assignment.')
+
     def is_square(self):
         return self.nrows is self.ncols
 
@@ -61,7 +64,7 @@ class Matrix(list):
             return NotImplemented
 
     def transpose(self):
-        """Reflection of entries along the main diagonal."""
+        """ Reflection of entries along the main diagonal. """
         t = []
         for c in range(self.ncols):
             t.append([self[r][c] for r in
@@ -69,13 +72,14 @@ class Matrix(list):
         return Matrix(t)
 
     def det(self) -> (Fraction, None):
-        """Returns the determinant of this matrix if it is square."""
+        """ Returns the determinant of this matrix if it is square. """
         if self.is_square():
             rows = list(range(self.nrows))
             cols = list(range(self.ncols))
             return self.__det(rows, cols)
         else:
-            raise MatrixSizeError('matrix not square.')
+            raise MatrixSizeError(
+                'cannot take determinant: matrix not square.')
 
     def __det(self, rows: [int, ], cols: [int, ]) -> Fraction:
         """
@@ -86,14 +90,14 @@ class Matrix(list):
         if len(rows) is 1:  # implies len(rows) is 1
             return self[rows[0]][cols[0]]
         else:
-            det = 0.0
+            det = Fraction(0)
             for i in range(len(cols)):
                 _cols = cols.copy()
                 _cols.remove(i)
-                _det = self[cols[i]][rows[0]]
+                _det: Fraction = self[cols[i]][rows[0]]
                 _det *= self.__det(rows[1:], _cols)
                 if i % 2 is 1:
-                    _det *= -1
+                    _det = -_det
                 det += _det
             return det
 
@@ -101,8 +105,12 @@ class Matrix(list):
         pass  # TODO:
 
     def inverse(self):
+        """
+        Finds a matrix A^-1 such that A * A^-1 is I
+        """
         if not self.is_square():
-            return
+            raise MatrixSizeError(
+                'cannot invert a non-square matrix.')
         pass  # TODO
 
     def __mul__(self, other):
@@ -110,8 +118,7 @@ class Matrix(list):
         Returns the matrix multiplication of
         self and other, if it is valid.
         (Ie. a matrix if other is a matrix,
-             a vector if other is a vector,
-             None if
+             a vector if other is a vector.
         """
         # Matrix multiplied be another matrix:
         if isinstance(other, Matrix):
@@ -159,7 +166,9 @@ class Matrix(list):
         for vec in self:
             numer.extend(vec)
             denom.extend(vec)
-        width = 1 if any(lambda frac: frac.neg, numer) else 0
+        width = 1 if any(map(lambda frac: frac.neg, numer)) else 0
+        if any(map(lambda frac: 1 not in frac.denom, numer)):
+            width += 1
         numer = max(map(Fraction.numer_prod, numer))
         denom = max(map(Fraction.denom_prod, denom))
         width += int(ceil(log10(numer))) + \
@@ -167,10 +176,28 @@ class Matrix(list):
 
         for row in self:
             rs = ', '.join(map(
-                lambda f: f.__str__().center(width + 2), row)
+                lambda f: f.__str__().center(width), row)
             )
             s += '[%s]\n' % rs
         return s
+
+    @staticmethod
+    def identity(n: int):
+        """ Returns an n x n identity matrix. """
+        im = Matrix.zeros(n)
+        for i in range(n):
+            im[i][i] = 1
+        return im
+
+    @staticmethod
+    def ones(n: int):
+        """ Returns an n x n matrix of all ones. """
+        return Matrix([[Fraction(1)] * n] * n)
+
+    @staticmethod
+    def zeros(n: int):
+        """ Returns an n x n matrix of all zeros. """
+        return Matrix([[Fraction(0)] * n] * n)
 
 
 class MatrixSizeError(Exception):
@@ -178,7 +205,6 @@ class MatrixSizeError(Exception):
     Used to raise Arithmetic exceptions when
     operand matrix sizes are incompatible.
     """
-
     def __init__(self, value):
         self.value = value
 
@@ -199,6 +225,9 @@ class Vector(list):
         """
         v = [Fraction(n) for n in v]
         super().__init__(v)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, Fraction(value))
 
     def norm(self):
         """ Returns the 'length' of the vector. """
@@ -287,4 +316,9 @@ print(mtx)
 print(mtx * mtx)
 print(2 * mtx)
 print(2 * mtx * mtx)
-#print((2 * mtx * mtx).det(), 44 * 62 - 66 * 12)
+print((2 * mtx * mtx).det(), 'is ', 18*36-27*12, '?')
+tup = (1, 2, 3)
+i5 = Matrix.identity(5)
+print(i5)
+i5[0][0] = Fraction(2)
+print(i5)
