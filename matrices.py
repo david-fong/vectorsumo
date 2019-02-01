@@ -282,21 +282,22 @@ class Vector(list):
 
     def __mul__(self, other):
         """Vector cross product."""
-        if (isinstance(other, Vector) and
-                len(self) is 3 and
-                len(self) is len(other)):
-            mtx = [[1, -1, 1], self[0], other[0]]
-            cross = []  # TODO
-            return Vector(cross)
+        if isinstance(other, Vector):
+            if len(self) is 3 and len(self) is len(other):
+                mtx = Matrix([
+                    [Matrix.identity(3), ] * 3,
+                    self, other
+                ])
+                mtx[0][1] = -mtx[0][1]
+                return mtx.det()
+            else:
+                raise MatrixSizeError(
+                    'Can only cross vectors in R^3.')
         else:
             raise MatrixSizeError('not vectors of length 3.')
 
     def __rmul__(self, other):
-        if isinstance(other, Fraction):
-            return Vector([
-                other * entry for entry in self
-            ])
-        elif isinstance(other, Number):
+        if isinstance(other, (Fraction, Number)):
             f_other = Fraction(other)
             return Vector([
                 f_other * entry for entry in self
@@ -305,20 +306,22 @@ class Vector(list):
             return NotImplemented
 
 
-vec1 = Vector([0, 0.5, 2, 3])
-mtx = Matrix([[0, 4.5],  # [0, 11]
-              [2, 3]])  # [2,  3]
+vec1 = Vector([0, 0.5, 2])
+mtx1 = Matrix([[0, 4.5],  # [0, 11]
+               [2, 3]])  # [2,  3]
 frac1 = Fraction(4.5)
+print(frac1 ** -2)
 print(frac1, frac1.numer, frac1.denom)
 print(vec1)
 print(5 * vec1)
-print(mtx)
-print(mtx * mtx)
-print(2 * mtx)
-print(2 * mtx * mtx)
-print((2 * mtx * mtx).det(), 'is ', 18*36-27*12, '?')
+print(mtx1)
+print(mtx1 * mtx1)
+print(2 * mtx1)
+print(2 * mtx1 * mtx1)
+print((2 * mtx1 * mtx1).det(), 'is ', 18 * 36 - 27 * 12, '?')
 tup = (1, 2, 3)
 i5 = Matrix.identity(5)
 print(i5)
 i5[0][0] = Fraction(2)
 print(i5)
+print(vec1 * vec1)

@@ -48,7 +48,8 @@ class Fraction:
     denom: [int, ] = []
     neg: bool = False
 
-    def __init__(self, numer: Number, denom=1, empty=False):
+    def __init__(self, numer: Number,
+                 denom=1, empty=False):
         """
         A numerator and denominator with a net sign.
         numer and denom are lists of prime factors.
@@ -197,14 +198,14 @@ class Fraction:
         return self + -other
 
     def reciprocal(self):
-        """Returns a reciprocal view of this fraction."""
+        """ Returns a reciprocal view of this fraction. """
         recip = Fraction(0, empty=True)
         recip.numer = self.denom.copy()
         recip.denom = self.numer.copy()
         return recip
 
     def __mul__(self, other):
-        """Returns the product of this and another fraction."""
+        """ Returns the product of this and another fraction. """
         if isinstance(other, Fraction):
             prod = Fraction(0, empty=True)
             prod.numer = self.numer + other.numer
@@ -215,8 +216,19 @@ class Fraction:
         else:
             return NotImplemented
 
+    def __imul__(self, other):
+        """ Multiplies self by other in-place. """
+        if isinstance(other, (Number, Fraction)):
+            f_other = Fraction(other)
+            self.numer.extend(f_other.numer)
+            self.denom.extend(f_other.denom)
+            self.neg ^= other.neg
+            self.simplify()
+        else:
+            return NotImplemented
+
     def __rmul__(self, other):
-        """Returns the product of this and a constant."""
+        """ Returns the product of this and a constant. """
         if isinstance(other, Number):
             return Fraction(other) * self
         else:
@@ -224,14 +236,13 @@ class Fraction:
 
     def __pow__(self, power, modulo=None):
         """Returns this fraction to the specified power."""
-        fexp = Fraction(0, empty=True)
         if power is 0:
-            fexp.numer = [1, ]
-            fexp.denom = [1, ]
-            return fexp
+            return Fraction(1)
         elif power < 0:
             fexp = self.reciprocal()
             power = abs(power)
+        else:
+            fexp = Fraction(self)
 
         fexp.numer *= power
         fexp.denom *= power
