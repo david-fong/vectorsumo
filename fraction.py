@@ -105,7 +105,9 @@ class RationalFrac:
             self.denom = factorize(abs(denom))
 
         else:
-            return
+            raise TypeError(
+                'could not create a rational ' +
+                'fraction with given parameters')
         # cleanup:
         self.simplify()
 

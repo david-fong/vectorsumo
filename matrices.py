@@ -1,5 +1,5 @@
 from functools import reduce
-from math import sqrt, pi, ceil, cos, sin, log10
+from math import sqrt, pi, ceil, cos, sin
 from numbers import Number
 
 from fraction import RationalFrac
@@ -28,22 +28,6 @@ class Matrix(list):
     def is_square(self):
         return self.nrows == self.ncols
 
-    def __iadd__(self, other):
-        """
-        Requires that all respective elements of self
-        and other are instances of the same type.
-        """
-        # check if matrix addition is valid
-        if isinstance(other, Matrix):
-            if not (other.nrows == self.nrows and
-                    other.ncols == self.ncols):
-                raise MatrixSizeError('dimensions not equal')
-            for r in range(self.nrows):
-                for c in range(self.ncols):
-                    self[r][c] += other[r][c]
-        else:
-            return NotImplemented
-
     def __add__(self, other):
         """
         Requires that all respective elements of self
@@ -61,6 +45,22 @@ class Matrix(list):
                      for c in range(self.ncols)]
                 )
             return Matrix(sum_mtx)
+        else:
+            return NotImplemented
+
+    def __iadd__(self, other):
+        """
+        Requires that all respective elements of self
+        and other are instances of the same type.
+        """
+        # check if matrix addition is valid
+        if isinstance(other, Matrix):
+            if not (other.nrows == self.nrows and
+                    other.ncols == self.ncols):
+                raise MatrixSizeError('dimensions not equal')
+            for r in range(self.nrows):
+                for c in range(self.ncols):
+                    self[r][c] += other[r][c]
         else:
             return NotImplemented
 
@@ -122,15 +122,14 @@ class Matrix(list):
         if len(rows) is 1:  # implies len(rows) is 1
             return self[rows[0]][cols[0]]
         else:
+            sign = RationalFrac(1)
             det = RationalFrac(0)
-            for i in range(len(cols)):
-                sub_det: RationalFrac = self[cols[i]][rows[0]]
-                if i % 2 is 1:
-                    sub_det = -sub_det
+            for col in cols:
                 _cols = cols.copy()
-                _cols.remove(cols[i])
-                sub_det *= self.recursive_det(rows[1:], _cols)
-                det += sub_det
+                _cols.remove(col)
+                det += (sign * self[rows[0]][col] *
+                        self.recursive_det(rows[1:], _cols))
+                sign = -sign
             return det
 
     def inverse(self):
@@ -200,23 +199,14 @@ class Matrix(list):
 
     def __str__(self):
         s = ''
-        numer = []
-        denom = []
+        contents = []
         for vec in self:
-            numer.extend(vec)
-            denom.extend(vec)
-        width = 1 if any(map(lambda frac: frac.neg, numer)) else 0
-        if any(map(lambda frac: 1 not in frac.denom, numer)):
-            width += 1
-        numer = max(map(RationalFrac.numer_prod, numer))
-        denom = max(map(RationalFrac.denom_prod, denom))
-        width += int(ceil(log10(numer))) + \
-            int(ceil(log10(denom)))
+            contents.extend(vec)
+        width = max(map(lambda frac: len(str(frac)), contents))
 
         for row in self:
             rs = ', '.join(map(
-                lambda f: f.__str__().center(width), row)
-            )
+                lambda f: f.__str__().center(width), row))
             s += '[%s]\n' % rs
         return s
 
@@ -255,6 +245,9 @@ class Vector(list):
     """
     A vector. All entries are Fraction objects.
     """
+    # TODO: once Fraction class is done,
+    #  refactor to use it instead of RationalFrac
+    #  Also refactor corresponding parts of Matrix class.
 
     def __init__(self, v: list):
         """
@@ -269,7 +262,7 @@ class Vector(list):
         super().__setitem__(key, RationalFrac(value))
 
     def __add__(self, other):
-        if isinstance(other, Vector):
+        if isinstance(other, (Vector, list, tuple)):
             if len(self) is not len(other):
                 raise MatrixSizeError(
                     'cannot add vectors: unequal lengths.')
@@ -292,10 +285,39 @@ class Vector(list):
         else:
             return NotImplemented
 
+    def __radd__(self, other):
+        if isinstance(other, list):
+            return self.__add__(other)
+
     def norm(self):
         """ Returns the 'length' of the vector. """
         # Equivalent to sqrt(sum(self.dot(self))):
         return sqrt(sum(map(lambda x: x ** 2, self)))
+
+    @staticmethod
+    def rot_matrix(theta: float, size: int, axis: str):
+        """ Returns a rotation matrix """
+        # TODO: This sucks. When monomials and functions are implemented,
+        #  support them in matrices and call something
+        #  like: " rm[size][axis].eval({'o': o}) "
+        rm = {
+            2: {
+                '': Matrix([[cos(theta), -sin(theta)],
+                            [sin(theta), cos(theta)]])
+            },
+            3: {
+                'x': Matrix([[1, 0, 0],
+                             [0, cos(theta), -sin(theta)],
+                             [0, sin(theta), cos(theta)]]),
+                'y': Matrix([[cos(theta), 0, sin(theta)],
+                             [0, 1, 0],
+                             [-sin(theta), 0, cos(theta)]]),
+                'z': Matrix([[cos(theta), -sin(theta), 0],
+                             [sin(theta), cos(theta), 0],
+                             [0, 0, 1]])
+            }
+        }  # Rotation matrices based on size
+        return rm[size][axis]
 
     def rot(self, o, axis=''):
         """
@@ -303,29 +325,10 @@ class Vector(list):
         The rotation is counterclockwise by theta,
         about the specified axis when relevant.
         """
-        rm = {  # TODO: Make this an external dictionary/lambda
-            2: {
-                '': Matrix([[cos(o), -sin(o)],
-                            [sin(o), cos(o)]])
-            },
-            3: {
-                'x': Matrix([[1, 0, 0],
-                             [0, cos(o), -sin(o)],
-                             [0, sin(o), cos(o)]]),
-                'y': Matrix([[cos(o), 0, sin(o)],
-                             [0, 1, 0],
-                             [-sin(o), 0, cos(o)]]),
-                'z': Matrix([[cos(o), -sin(o), 0],
-                             [sin(o), cos(o), 0],
-                             [0, 0, 1]])
-            }
-        }  # Rotation matrices based on size
-        if len(self) not in rm.keys():
-            return
         if o < 0:
             o = ceil(-o / 2 / pi) * 2 * pi + o
         o %= 2 * pi
-        return rm[len(self)][axis] @ self
+        return Vector.rot_matrix(0, len(self), axis) @ self
 
     def transform(self):
         """Return a [1 x len(self)] matrix"""
@@ -343,25 +346,32 @@ class Vector(list):
         else:
             raise MatrixSizeError('vector lengths incompatible.')
 
-    def __mul__(self, others):
+    def __mul__(self, *others):
         """ Vector cross product. """
-        if len(others) != len(self) - 2 or any(map(
-                lambda v: len(v) != len(self), others)):
+        # TODO: reconsider *others: not suited for parsing user expressions.
+        if len(others) != len(self) - 2:
             raise MatrixSizeError(
-                'not enough lists/vectors to perform cross-product\n' +
-                'or the lists/vectors are not all of equal length.')
-        mtx = [[1 if i % 2 is 0 else -1 for i in range(len(self))], self]
+                'not enough lists/vectors to perform cross-product.')
+        elif any(map(lambda v: len(v) != len(self), others)):
+            raise MatrixSizeError(
+                'the other lists/vectors are not all of equal length.')
+
+        # Inputs verified as valid. setup matrix:
+        mtx = [[1 if i % 2 is 0 else -1
+                for i in range(len(self))],
+               self]
         for other in others:
             mtx.append(other)
-            mtx = Matrix(mtx)
+        mtx = Matrix(mtx)
 
+        # Calculate the cross product:
         cross = []
-        rows = list(range(len(self)))
+        rows = list(range(1, mtx.nrows))
         cols = list(range(len(self)))
         for c in cols:
             _cols = cols.copy()
             _cols.remove(c)
-            cross.append(mtx.recursive_det(rows[2:0], _cols))
+            cross.append(mtx[0][c] * mtx.recursive_det(rows, _cols))
         return Vector(cross)
 
     def __rmul__(self, other):
@@ -382,9 +392,9 @@ class Vector(list):
 # Small tests:
 vec1 = Vector([0, 0.5, 2])
 mtx1 = Matrix([[0, 4.5],  # [0, 11]
-               [2, 3]])  # [2,  3]
+               [2, 3]])   # [2,  3]
 frac1 = RationalFrac(1)
-print(frac1)
+# print(frac1)
 # print(frac1 ** -2)
 # print(frac1, frac1.numer, frac1.denom)
 # print(vec1)
@@ -398,7 +408,7 @@ print(frac1)
 i5 = Matrix.identity(5)
 # print(i5)
 i5[0][0] = RationalFrac(2)
-print(i5)
+# print(i5)
+print(vec1)
 print(vec1 * vec1)
-print([0, 0, 0] + vec1)
-print((1 + 2))
+print([0, 1, 0] + vec1)
