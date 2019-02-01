@@ -21,11 +21,12 @@ class Matrix(list):
         self.ncols = len(rows[0])
         super().__init__([Vector(row) for row in rows])
 
-    def __setitem__(self, key, value):
-        raise PermissionError('Matrix does not support row assignment.')
+    # def __setitem__(self, key, value):
+    #     raise PermissionError(
+    #         'Matrix does not support row assignment.')
 
     def is_square(self):
-        return self.nrows is self.ncols
+        return self.nrows == self.ncols
 
     def __iadd__(self, other):
         """
@@ -34,8 +35,8 @@ class Matrix(list):
         """
         # check if matrix addition is valid
         if isinstance(other, Matrix):
-            if not (other.nrows is self.nrows and
-                    other.ncols is self.ncols):
+            if not (other.nrows == self.nrows and
+                    other.ncols == self.ncols):
                 raise MatrixSizeError('dimensions not equal')
             for r in range(self.nrows):
                 for c in range(self.ncols):
@@ -50,8 +51,8 @@ class Matrix(list):
         """
         # check if matrix addition is valid
         if isinstance(other, Matrix):
-            if not (other.nrows is self.nrows and
-                    other.ncols is self.ncols):
+            if not (other.nrows == self.nrows and
+                    other.ncols == self.ncols):
                 raise MatrixSizeError('dimensions not equal')
             sum_mtx = []
             for r in range(self.nrows):
@@ -71,12 +72,40 @@ class Matrix(list):
                       range(self.nrows)])
         return Matrix(t)
 
+    def reduce(self):
+        """
+        Returns the reduced form of self
+        """
+        red = Matrix(self)
+        free_vars = 0
+        for i in range(self.nrows):
+            # Find a row where the target col is not zero:
+            if float(red[i][i + free_vars]) is 0.0:
+                _i = i + 1
+                while (_i < self.nrows and
+                       float(red[_i][i + free_vars]) is 0.0):
+                    _i += 1
+                if _i is self.nrows:
+                    free_vars += 1
+                    continue
+                # Switch this row with one
+                # where target col is not zero:
+                temp = red[i]
+                red[i] = red[_i]
+                red[_i] = temp
+
+            red[i] *= red[i][i + free_vars].reciprocal()
+            for row in self[i+1:]:
+                row += -row[i + free_vars] * self[i]
+
     def det(self) -> (Fraction, None):
         """ Returns the determinant of this matrix if it is square. """
         if self.is_square():
             rows = list(range(self.nrows))
             cols = list(range(self.ncols))
             return self.__det(rows, cols)
+            # or alternatively, return reduce(mul,
+            # [self[i][i] for i in range(self.nrows)])
         else:
             raise MatrixSizeError(
                 'cannot take determinant: matrix not square.')
@@ -92,17 +121,14 @@ class Matrix(list):
         else:
             det = Fraction(0)
             for i in range(len(cols)):
+                sub_det: Fraction = self[cols[i]][rows[0]]
                 _cols = cols.copy()
-                _cols.remove(i)
-                _det: Fraction = self[cols[i]][rows[0]]
-                _det *= self.__det(rows[1:], _cols)
+                _cols.remove(cols[i])
+                sub_det *= self.__det(rows[1:], _cols)
                 if i % 2 is 1:
-                    _det = -_det
-                det += _det
+                    sub_det = -sub_det
+                det += sub_det
             return det
-
-    def reduce(self):
-        pass  # TODO:
 
     def inverse(self):
         """
@@ -111,6 +137,10 @@ class Matrix(list):
         if not self.is_square():
             raise MatrixSizeError(
                 'cannot invert a non-square matrix.')
+        elif self.det() is 0:
+            raise ArithmeticError(
+                'matrix not homogeneous. cannot compute inverse.')
+
         pass  # TODO
 
     def __mul__(self, other):
@@ -229,6 +259,30 @@ class Vector(list):
     def __setitem__(self, key, value):
         super().__setitem__(key, Fraction(value))
 
+    def __add__(self, other):
+        if isinstance(other, Vector):
+            if len(self) is not len(other):
+                raise MatrixSizeError(
+                    'cannot add vectors: unequal lengths.')
+            else:
+                return Vector([
+                    self[i] + other[i]
+                    for i in range(len(self))
+                ])
+        else:
+            return NotImplemented
+
+    def __iadd__(self, other):
+        if isinstance(other, Vector):
+            if len(self) is not len(other):
+                raise MatrixSizeError(
+                    'cannot add vectors: unequal lengths.')
+            else:
+                for i in range(len(self)):
+                    self[i] = self[i] + other
+        else:
+            return NotImplemented
+
     def norm(self):
         """ Returns the 'length' of the vector. """
         # Equivalent to sqrt(sum(self.dot(self))):
@@ -281,7 +335,7 @@ class Vector(list):
             raise MatrixSizeError('vector lengths incompatible.')
 
     def __mul__(self, other):
-        """Vector cross product."""
+        """ Vector cross product. """
         if isinstance(other, Vector):
             if len(self) is 3 and len(self) is len(other):
                 mtx = Matrix([
@@ -289,6 +343,8 @@ class Vector(list):
                     self, other
                 ])
                 mtx[0][1] = -mtx[0][1]
+                print(mtx)
+                print(mtx[0][1].denom)
                 return mtx.det()
             else:
                 raise MatrixSizeError(
@@ -297,7 +353,12 @@ class Vector(list):
             raise MatrixSizeError('not vectors of length 3.')
 
     def __rmul__(self, other):
-        if isinstance(other, (Fraction, Number)):
+        """ Scalar multiplication. """
+        if isinstance(other, Fraction):
+            return Vector([
+                other * entry for entry in self
+            ])
+        elif isinstance(other, Number):
             f_other = Fraction(other)
             return Vector([
                 f_other * entry for entry in self
@@ -325,3 +386,9 @@ print(i5)
 i5[0][0] = Fraction(2)
 print(i5)
 print(vec1 * vec1)
+print(
+    '1^0 ', not(True is False),
+    '\n0^1 ', not(False is True),
+    '\n0^0 ', not(False is False),
+    '\n1^1 ', not(True is True),
+    )

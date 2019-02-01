@@ -48,8 +48,7 @@ class Fraction:
     denom: [int, ] = []
     neg: bool = False
 
-    def __init__(self, numer: Number,
-                 denom=1, empty=False):
+    def __init__(self, numer, denom=1, empty=False):
         """
         A numerator and denominator with a net sign.
         numer and denom are lists of prime factors.
@@ -87,7 +86,7 @@ class Fraction:
 
         # If initialized with a numerator and denominator:
         elif isinstance(numer, int) and isinstance(denom, int):
-            self.neg = (numer < 0) ^ (denom < 0)
+            self.neg = not ((numer < 0) is (denom < 0))
             numer = abs(numer)
             denom = abs(denom)
             self.numer = factorize(numer) if numer is not 0 else [0, ]
@@ -110,23 +109,22 @@ class Fraction:
             self.denom = [1, ]
             return
         elif 0 in self.denom:
-            # TODO: handle this case in __add___, etc...
             self.denom = [0, ]
             return
 
         # Eliminate common factors:
-        for prime in set(self.numer):
+        for factor in set(self.numer):
             # number of shared occurrences:
-            count = min(self.denom.count(prime),
-                        self.numer.count(prime))
+            count = min(self.denom.count(factor),
+                        self.numer.count(factor))
             # Remove each shared occurrence:
             for i in range(count):
-                self.numer.remove(prime)
-                self.denom.remove(prime)
+                self.numer.remove(factor)
+                self.denom.remove(factor)
 
-        if len(self.numer) is 0:
+        if len(self.numer) == 0:
             self.numer = [1, ]
-        if len(self.denom) is 0:
+        if len(self.denom) == 0:
             self.denom = [1, ]
 
     def __float__(self) -> float:
@@ -149,7 +147,7 @@ class Fraction:
         if 0 in self.numer:
             s += '0'
         elif 0 in self.denom:
-            s += 'inf'
+            s += 'undef'
         else:
             s += '%d' % self.numer_prod()
             if 1 not in self.denom:
@@ -160,14 +158,15 @@ class Fraction:
         neg = Fraction(0, empty=True)
         neg.numer = self.numer.copy()
         neg.denom = self.denom.copy()
-        neg.neg = ~self.neg
+        neg.neg = not self.neg
         return neg
 
     def __add__(self, other):
         """Returns the sum of this fraction and other."""
-        if (isinstance(other, Fraction) and
-                self.denom is not [0, ] and
-                other.denom is not [0, ]):
+        if isinstance(other, Fraction):
+            if (self.denom is [0, ] or
+                    other.denom is [0, ]):
+                raise ZeroDivisionError
             fsum = Fraction(0, empty=True)
 
             # Get denominator factors not
@@ -193,6 +192,12 @@ class Fraction:
         else:
             return NotImplemented
 
+    def __iadd__(self, other):
+        if isinstance(other, Number):
+            return self.__add__(Fraction(other))
+        else:
+            return NotImplemented
+
     def __sub__(self, other):
         """Returns the difference between this fraction and other."""
         return self + -other
@@ -210,19 +215,19 @@ class Fraction:
             prod = Fraction(0, empty=True)
             prod.numer = self.numer + other.numer
             prod.denom = self.denom + other.denom
-            prod.neg = self.neg ^ other.neg
+            prod.neg = not (self.neg is other.neg)
             prod.simplify()
             return prod
         else:
             return NotImplemented
 
     def __imul__(self, other):
-        """ Multiplies self by other in-place. """
-        if isinstance(other, (Number, Fraction)):
+        """ Multiplies self by other(a constant) in-place. """
+        if isinstance(other, (int, float)):
             f_other = Fraction(other)
             self.numer.extend(f_other.numer)
             self.denom.extend(f_other.denom)
-            self.neg ^= other.neg
+            self.neg = not (self.neg is other < 1)
             self.simplify()
         else:
             return NotImplemented
@@ -246,7 +251,7 @@ class Fraction:
 
         fexp.numer *= power
         fexp.denom *= power
-        fexp.neg = power % 2 is 1 if self.neg else False
+        fexp.neg = (power % 2 == 1) if self.neg else False
         return fexp
 
 
