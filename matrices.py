@@ -64,6 +64,9 @@ class Matrix(list):
         else:
             return NotImplemented
 
+    """
+    Special Matrix operations:
+    """
     def transpose(self):
         """ Reflection of entries along the main diagonal. """
         t = []
@@ -122,18 +125,16 @@ class Matrix(list):
             det = Fraction(0)
             for i in range(len(cols)):
                 sub_det: Fraction = self[cols[i]][rows[0]]
+                if i % 2 is 1:
+                    sub_det = -sub_det
                 _cols = cols.copy()
                 _cols.remove(cols[i])
                 sub_det *= self.__det(rows[1:], _cols)
-                if i % 2 is 1:
-                    sub_det = -sub_det
                 det += sub_det
             return det
 
     def inverse(self):
-        """
-        Finds a matrix A^-1 such that A * A^-1 is I
-        """
+        """ Finds a matrix A^-1 such that A * A^-1 is I. """
         if not self.is_square():
             raise MatrixSizeError(
                 'cannot invert a non-square matrix.')
@@ -143,7 +144,10 @@ class Matrix(list):
 
         pass  # TODO
 
-    def __mul__(self, other):
+    """
+    Matrix multiplication and Scalar multiplication:
+    """
+    def __matmul__(self, other):
         """
         Returns the matrix multiplication of
         self and other, if it is valid.
@@ -172,6 +176,10 @@ class Matrix(list):
                 for r in range(self.nrows)
             ])
 
+        # Operand 2 is a scalar:
+        elif isinstance(other, (Fraction, Number)):
+            return self.__rmul__(other)
+
         # Unexpected second operand:
         else:
             return NotImplemented
@@ -181,10 +189,11 @@ class Matrix(list):
         Multiplies this matrix by a leading scalar.
         Returns the product.
         """
-        if isinstance(other, Number):
+        if isinstance(other, (Fraction, Number)):
             prod = []
+            # Multiply each vector-row by the scalar
             for r in range(self.nrows):
-                prod.append(other * self[r])
+                prod.append(self[r].__rmul__(other))
             return Matrix(prod)
         else:
             return NotImplemented
@@ -316,7 +325,7 @@ class Vector(list):
         if o < 0:
             o = ceil(-o / 2 / pi) * 2 * pi + o
         o %= 2 * pi
-        return rm[len(self)][axis] * self
+        return rm[len(self)][axis] @ self
 
     def transform(self):
         """Return a [1 x len(self)] matrix"""
@@ -343,8 +352,9 @@ class Vector(list):
                     self, other
                 ])
                 mtx[0][1] = -mtx[0][1]
-                print(mtx)
-                print(mtx[0][1].denom)
+                # TODO: fix broken fraction repr's "1/1 and -1/1"
+                #       and fix cross product. Do not use det anymore,
+                #       since the * operator is no longer matrix multiplication.
                 return mtx.det()
             else:
                 raise MatrixSizeError(
@@ -371,24 +381,19 @@ vec1 = Vector([0, 0.5, 2])
 mtx1 = Matrix([[0, 4.5],  # [0, 11]
                [2, 3]])  # [2,  3]
 frac1 = Fraction(4.5)
-print(frac1 ** -2)
-print(frac1, frac1.numer, frac1.denom)
-print(vec1)
-print(5 * vec1)
-print(mtx1)
-print(mtx1 * mtx1)
-print(2 * mtx1)
-print(2 * mtx1 * mtx1)
-print((2 * mtx1 * mtx1).det(), 'is ', 18 * 36 - 27 * 12, '?')
-tup = (1, 2, 3)
+# print(frac1 ** -2)
+# print(frac1, frac1.numer, frac1.denom)
+# print(vec1)
+# print(5 * vec1)
+# print(mtx1)
+# print(mtx1 @ mtx1)
+# print(2 * mtx1)
+# print(2 * mtx1 @ mtx1)
+# print((2 * mtx1 @ mtx1).det(), 'is ', 18 * 36 - 27 * 12, '?')
 i5 = Matrix.identity(5)
-print(i5)
+# print(i5)
 i5[0][0] = Fraction(2)
 print(i5)
 print(vec1 * vec1)
-print(
-    '1^0 ', not(True is False),
-    '\n0^1 ', not(False is True),
-    '\n0^0 ', not(False is False),
-    '\n1^1 ', not(True is True),
-    )
+print([0, 0, 0] + vec1)
+print((1 + 2))

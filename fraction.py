@@ -127,6 +127,9 @@ class Fraction:
         if len(self.denom) == 0:
             self.denom = [1, ]
 
+    """
+    Public-use, representation/observer methods:
+    """
     def __float__(self) -> float:
         """Public method to get the float value of this fraction."""
         val = self.numer_prod() / self.denom_prod()
@@ -135,12 +138,6 @@ class Fraction:
     def __int__(self) -> int:
         """Public method to get the int value of this fraction."""
         return int(float(self))
-
-    def numer_prod(self) -> int:
-        return reduce(mul, self.numer, 1)
-
-    def denom_prod(self) -> int:
-        return reduce(mul, self.denom, 1)
 
     def __repr__(self) -> str:
         s = '-' if self.neg else ''
@@ -154,6 +151,15 @@ class Fraction:
                 s += '/%d' % self.denom_prod()
         return s
 
+    def numer_prod(self) -> int:
+        return reduce(mul, self.numer, 1)
+
+    def denom_prod(self) -> int:
+        return reduce(mul, self.denom, 1)
+
+    """
+    Negation, Addition, and Subtraction:
+    """
     def __neg__(self):
         neg = Fraction(0, empty=True)
         neg.numer = self.numer.copy()
@@ -202,6 +208,9 @@ class Fraction:
         """Returns the difference between this fraction and other."""
         return self + -other
 
+    """
+    Multiplication, Division, and Exponents:
+    """
     def reciprocal(self):
         """ Returns a reciprocal view of this fraction. """
         recip = Fraction(0, empty=True)
@@ -223,8 +232,8 @@ class Fraction:
 
     def __imul__(self, other):
         """ Multiplies self by other(a constant) in-place. """
-        if isinstance(other, (int, float)):
-            f_other = Fraction(other)
+        if isinstance(other, (Fraction, float, int)):
+            f_other = Fraction(other) if isinstance(other, Fraction) else other
             self.numer.extend(f_other.numer)
             self.denom.extend(f_other.denom)
             self.neg = not (self.neg is other < 1)
@@ -239,8 +248,32 @@ class Fraction:
         else:
             return NotImplemented
 
+    def __truediv__(self, other):
+        """ Returns the quotient of this and another fraction. """
+        if isinstance(other, Fraction):
+            return other.reciprocal() * self
+        elif isinstance(other, Number):
+            f_other = Fraction(other)
+            return f_other.reciprocal() * self
+        else:
+            return NotImplemented
+
+    def __itruediv__(self, other):
+        """ Divides self by other(a constant) in-place. """
+        if isinstance(other, (Fraction, float, int)):
+            f_other = Fraction(other) if isinstance(other, Fraction) else other
+            f_other = f_other.reciprocal()
+
+            # Same as __mul__():
+            self.numer.extend(f_other.numer)
+            self.denom.extend(f_other.denom)
+            self.neg = not (self.neg is other < 1)
+            self.simplify()
+        else:
+            return NotImplemented
+
     def __pow__(self, power, modulo=None):
-        """Returns this fraction to the specified power."""
+        """ Returns this fraction to the specified power. """
         if power is 0:
             return Fraction(1)
         elif power < 0:
@@ -253,6 +286,27 @@ class Fraction:
         fexp.denom *= power
         fexp.neg = (power % 2 == 1) if self.neg else False
         return fexp
+
+    """
+    Rich comparison methods:
+    """
+    def __eq__(self, other):
+        """ Returns True if the fractions are equal in value. """
+        if isinstance(other, (Fraction, Number)):
+            f_other = Fraction(other) if isinstance(other, Number) else other
+            return (self.numer == f_other.numer and
+                    self.denom == f_other.denom and
+                    self.neg is f_other.neg)
+        else:
+            return NotImplemented
+
+    def __lt__(self, other):
+        """ Returns True if the fractions are equal in value. """
+        if isinstance(other, (Fraction, Number)):
+            f_other = Fraction(other) if isinstance(other, Number) else other
+            return (self - f_other).neg
+        else:
+            return NotImplemented
 
 
 # test = Fraction(4.5)
