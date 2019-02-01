@@ -39,10 +39,23 @@ def __prime_factors(start=2):
     print(factors)
 
 
-class Fraction:
+class Fraction(dict):
+    """
+    A real-valued fraction.
+    Consists of a single dict from prime factors,
+        to their powers, which are rational fractions.
     """
 
-    *Note: Current behaviour undefined for complex numbers.
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class RationalFrac:
+    """
+    A rational-valued fraction.
+    Consists of two lists of integer-valued prime factors-
+        one for the numerator, and one for the denominator.
+    Each operation preserves that the fraction is simplified.
     """
     numer: [int, ] = []
     denom: [int, ] = []
@@ -62,7 +75,7 @@ class Fraction:
             return
 
         # If copy constructing another Fraction:
-        if isinstance(numer, Fraction):
+        if isinstance(numer, RationalFrac):
             self.numer = numer.numer
             self.denom = numer.denom
             self.neg = numer.neg
@@ -87,10 +100,9 @@ class Fraction:
         # If initialized with a numerator and denominator:
         elif isinstance(numer, int) and isinstance(denom, int):
             self.neg = not ((numer < 0) is (denom < 0))
-            numer = abs(numer)
-            denom = abs(denom)
-            self.numer = factorize(numer) if numer is not 0 else [0, ]
-            self.denom = factorize(denom)
+            self.numer = factorize(abs(numer)) \
+                if numer is not 0 else [0, ]
+            self.denom = factorize(abs(denom))
 
         else:
             return
@@ -161,7 +173,7 @@ class Fraction:
     Negation, Addition, and Subtraction:
     """
     def __neg__(self):
-        neg = Fraction(0, empty=True)
+        neg = RationalFrac(0, empty=True)
         neg.numer = self.numer.copy()
         neg.denom = self.denom.copy()
         neg.neg = not self.neg
@@ -169,11 +181,11 @@ class Fraction:
 
     def __add__(self, other):
         """Returns the sum of this fraction and other."""
-        if isinstance(other, Fraction):
+        if isinstance(other, RationalFrac):
             if (self.denom is [0, ] or
                     other.denom is [0, ]):
                 raise ZeroDivisionError
-            fsum = Fraction(0, empty=True)
+            fsum = RationalFrac(0, empty=True)
 
             # Get denominator factors not
             # shared for self and other:
@@ -193,14 +205,14 @@ class Fraction:
             fsum.simplify()
             return fsum
 
-        elif isinstance(other, Number):
-            return self.__add__(Fraction(other))
+        elif isinstance(other, (int, float)):
+            return self.__add__(RationalFrac(other))
         else:
             return NotImplemented
 
     def __iadd__(self, other):
-        if isinstance(other, Number):
-            return self.__add__(Fraction(other))
+        if isinstance(other, (int, float)):
+            return self.__add__(RationalFrac(other))
         else:
             return NotImplemented
 
@@ -213,15 +225,15 @@ class Fraction:
     """
     def reciprocal(self):
         """ Returns a reciprocal view of this fraction. """
-        recip = Fraction(0, empty=True)
+        recip = RationalFrac(0, empty=True)
         recip.numer = self.denom.copy()
         recip.denom = self.numer.copy()
         return recip
 
     def __mul__(self, other):
         """ Returns the product of this and another fraction. """
-        if isinstance(other, Fraction):
-            prod = Fraction(0, empty=True)
+        if isinstance(other, RationalFrac):
+            prod = RationalFrac(0, empty=True)
             prod.numer = self.numer + other.numer
             prod.denom = self.denom + other.denom
             prod.neg = not (self.neg is other.neg)
@@ -232,8 +244,8 @@ class Fraction:
 
     def __imul__(self, other):
         """ Multiplies self by other(a constant) in-place. """
-        if isinstance(other, (Fraction, float, int)):
-            f_other = Fraction(other) if isinstance(other, Fraction) else other
+        if isinstance(other, (RationalFrac, float, int)):
+            f_other = RationalFrac(other) if isinstance(other, RationalFrac) else other
             self.numer.extend(f_other.numer)
             self.denom.extend(f_other.denom)
             self.neg = not (self.neg is other < 1)
@@ -243,25 +255,25 @@ class Fraction:
 
     def __rmul__(self, other):
         """ Returns the product of this and a constant. """
-        if isinstance(other, Number):
-            return Fraction(other) * self
+        if isinstance(other, (int, float)):
+            return RationalFrac(other) * self
         else:
             return NotImplemented
 
     def __truediv__(self, other):
         """ Returns the quotient of this and another fraction. """
-        if isinstance(other, Fraction):
+        if isinstance(other, RationalFrac):
             return other.reciprocal() * self
-        elif isinstance(other, Number):
-            f_other = Fraction(other)
+        elif isinstance(other, (int, float)):
+            f_other = RationalFrac(other)
             return f_other.reciprocal() * self
         else:
             return NotImplemented
 
     def __itruediv__(self, other):
         """ Divides self by other(a constant) in-place. """
-        if isinstance(other, (Fraction, float, int)):
-            f_other = Fraction(other) if isinstance(other, Fraction) else other
+        if isinstance(other, (RationalFrac, float, int)):
+            f_other = RationalFrac(other) if isinstance(other, RationalFrac) else other
             f_other = f_other.reciprocal()
 
             # Same as __mul__():
@@ -275,12 +287,12 @@ class Fraction:
     def __pow__(self, power, modulo=None):
         """ Returns this fraction to the specified power. """
         if power is 0:
-            return Fraction(1)
+            return RationalFrac(1)
         elif power < 0:
             fexp = self.reciprocal()
             power = abs(power)
         else:
-            fexp = Fraction(self)
+            fexp = RationalFrac(self)
 
         fexp.numer *= power
         fexp.denom *= power
@@ -291,9 +303,14 @@ class Fraction:
     Rich comparison methods:
     """
     def __eq__(self, other):
-        """ Returns True if the fractions are equal in value. """
-        if isinstance(other, (Fraction, Number)):
-            f_other = Fraction(other) if isinstance(other, Number) else other
+        """
+        Returns True if the fractions are equal in value.
+        Assumes the rep invariant that both are fully simplified.
+        """
+        if isinstance(other, (RationalFrac, int, float)):
+            f_other = RationalFrac(other) if \
+                isinstance(other, (int, float)) else other
+
             return (self.numer == f_other.numer and
                     self.denom == f_other.denom and
                     self.neg is f_other.neg)
@@ -302,8 +319,8 @@ class Fraction:
 
     def __lt__(self, other):
         """ Returns True if the fractions are equal in value. """
-        if isinstance(other, (Fraction, Number)):
-            f_other = Fraction(other) if isinstance(other, Number) else other
+        if isinstance(other, (RationalFrac, Number)):
+            f_other = RationalFrac(other) if isinstance(other, Number) else other
             return (self - f_other).neg
         else:
             return NotImplemented

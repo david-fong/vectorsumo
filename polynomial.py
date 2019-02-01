@@ -1,6 +1,6 @@
 from numbers import Number
 
-from fraction import Fraction
+from fraction import RationalFrac
 
 
 class Monomial(dict):
@@ -9,9 +9,9 @@ class Monomial(dict):
     Represented as a dictionary from strings, which are
     variable names, to integers, which are their degrees.
     """
-    coefficient: Fraction
+    coefficient: RationalFrac
 
-    def __init__(self, coefficient: (Number, Fraction), **kwargs: _VT):
+    def __init__(self, coefficient: (Number, RationalFrac), **kwargs: _VT):
         super().__init__(**kwargs)
         self.coefficient = coefficient
         # TODO

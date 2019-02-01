@@ -2,7 +2,7 @@ from functools import reduce
 from math import sqrt, pi, ceil, cos, sin, log10
 from numbers import Number
 
-from fraction import Fraction
+from fraction import RationalFrac
 
 
 class Matrix(list):
@@ -101,19 +101,19 @@ class Matrix(list):
             for row in self[i+1:]:
                 row += -row[i + free_vars] * self[i]
 
-    def det(self) -> (Fraction, None):
+    def det(self) -> (RationalFrac, None):
         """ Returns the determinant of this matrix if it is square. """
         if self.is_square():
             rows = list(range(self.nrows))
             cols = list(range(self.ncols))
-            return self.__det(rows, cols)
+            return self.recursive_det(rows, cols)
             # or alternatively, return reduce(mul,
             # [self[i][i] for i in range(self.nrows)])
         else:
             raise MatrixSizeError(
                 'cannot take determinant: matrix not square.')
 
-    def __det(self, rows: [int, ], cols: [int, ]) -> Fraction:
+    def recursive_det(self, rows: [int, ], cols: [int, ]) -> RationalFrac:
         """
         Private helper for det(). Recursive function.
         cols and rows are chopped up index slices.
@@ -122,14 +122,14 @@ class Matrix(list):
         if len(rows) is 1:  # implies len(rows) is 1
             return self[rows[0]][cols[0]]
         else:
-            det = Fraction(0)
+            det = RationalFrac(0)
             for i in range(len(cols)):
-                sub_det: Fraction = self[cols[i]][rows[0]]
+                sub_det: RationalFrac = self[cols[i]][rows[0]]
                 if i % 2 is 1:
                     sub_det = -sub_det
                 _cols = cols.copy()
                 _cols.remove(cols[i])
-                sub_det *= self.__det(rows[1:], _cols)
+                sub_det *= self.recursive_det(rows[1:], _cols)
                 det += sub_det
             return det
 
@@ -177,7 +177,7 @@ class Matrix(list):
             ])
 
         # Operand 2 is a scalar:
-        elif isinstance(other, (Fraction, Number)):
+        elif isinstance(other, (RationalFrac, Number)):
             return self.__rmul__(other)
 
         # Unexpected second operand:
@@ -189,7 +189,7 @@ class Matrix(list):
         Multiplies this matrix by a leading scalar.
         Returns the product.
         """
-        if isinstance(other, (Fraction, Number)):
+        if isinstance(other, (RationalFrac, Number)):
             prod = []
             # Multiply each vector-row by the scalar
             for r in range(self.nrows):
@@ -208,8 +208,8 @@ class Matrix(list):
         width = 1 if any(map(lambda frac: frac.neg, numer)) else 0
         if any(map(lambda frac: 1 not in frac.denom, numer)):
             width += 1
-        numer = max(map(Fraction.numer_prod, numer))
-        denom = max(map(Fraction.denom_prod, denom))
+        numer = max(map(RationalFrac.numer_prod, numer))
+        denom = max(map(RationalFrac.denom_prod, denom))
         width += int(ceil(log10(numer))) + \
             int(ceil(log10(denom)))
 
@@ -231,12 +231,12 @@ class Matrix(list):
     @staticmethod
     def ones(n: int):
         """ Returns an n x n matrix of all ones. """
-        return Matrix([[Fraction(1)] * n] * n)
+        return Matrix([[RationalFrac(1)] * n] * n)
 
     @staticmethod
     def zeros(n: int):
         """ Returns an n x n matrix of all zeros. """
-        return Matrix([[Fraction(0)] * n] * n)
+        return Matrix([[RationalFrac(0)] * n] * n)
 
 
 class MatrixSizeError(Exception):
@@ -262,11 +262,11 @@ class Vector(list):
         are Numbers. Initialize self with
         the fraction versions of v's entries.
         """
-        v = [Fraction(n) for n in v]
-        super().__init__(v)
+        vec = [RationalFrac(n) for n in v]
+        super().__init__(vec)
 
     def __setitem__(self, key, value):
-        super().__setitem__(key, Fraction(value))
+        super().__setitem__(key, RationalFrac(value))
 
     def __add__(self, other):
         if isinstance(other, Vector):
@@ -343,33 +343,35 @@ class Vector(list):
         else:
             raise MatrixSizeError('vector lengths incompatible.')
 
-    def __mul__(self, other):
+    def __mul__(self, others):
         """ Vector cross product. """
-        if isinstance(other, Vector):
-            if len(self) is 3 and len(self) is len(other):
-                mtx = Matrix([
-                    [Matrix.identity(3), ] * 3,
-                    self, other
-                ])
-                mtx[0][1] = -mtx[0][1]
-                # TODO: fix broken fraction repr's "1/1 and -1/1"
-                #       and fix cross product. Do not use det anymore,
-                #       since the * operator is no longer matrix multiplication.
-                return mtx.det()
-            else:
-                raise MatrixSizeError(
-                    'Can only cross vectors in R^3.')
-        else:
-            raise MatrixSizeError('not vectors of length 3.')
+        if len(others) != len(self) - 2 or any(map(
+                lambda v: len(v) != len(self), others)):
+            raise MatrixSizeError(
+                'not enough lists/vectors to perform cross-product\n' +
+                'or the lists/vectors are not all of equal length.')
+        mtx = [[1 if i % 2 is 0 else -1 for i in range(len(self))], self]
+        for other in others:
+            mtx.append(other)
+            mtx = Matrix(mtx)
+
+        cross = []
+        rows = list(range(len(self)))
+        cols = list(range(len(self)))
+        for c in cols:
+            _cols = cols.copy()
+            _cols.remove(c)
+            cross.append(mtx.recursive_det(rows[2:0], _cols))
+        return Vector(cross)
 
     def __rmul__(self, other):
         """ Scalar multiplication. """
-        if isinstance(other, Fraction):
+        if isinstance(other, RationalFrac):
             return Vector([
                 other * entry for entry in self
             ])
         elif isinstance(other, Number):
-            f_other = Fraction(other)
+            f_other = RationalFrac(other)
             return Vector([
                 f_other * entry for entry in self
             ])
@@ -377,10 +379,12 @@ class Vector(list):
             return NotImplemented
 
 
+# Small tests:
 vec1 = Vector([0, 0.5, 2])
 mtx1 = Matrix([[0, 4.5],  # [0, 11]
                [2, 3]])  # [2,  3]
-frac1 = Fraction(4.5)
+frac1 = RationalFrac(1)
+print(frac1)
 # print(frac1 ** -2)
 # print(frac1, frac1.numer, frac1.denom)
 # print(vec1)
@@ -389,10 +393,11 @@ frac1 = Fraction(4.5)
 # print(mtx1 @ mtx1)
 # print(2 * mtx1)
 # print(2 * mtx1 @ mtx1)
+# TODO: Test vector cross method.
 # print((2 * mtx1 @ mtx1).det(), 'is ', 18 * 36 - 27 * 12, '?')
 i5 = Matrix.identity(5)
 # print(i5)
-i5[0][0] = Fraction(2)
+i5[0][0] = RationalFrac(2)
 print(i5)
 print(vec1 * vec1)
 print([0, 0, 0] + vec1)
