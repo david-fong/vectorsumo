@@ -137,9 +137,9 @@ class RationalFrac:
                 self.numer.remove(factor)
                 self.denom.remove(factor)
 
-        if len(self.numer) == 0:
+        if len(self.numer) == 0 or 1 in self.numer:
             self.numer = [1, ]
-        if len(self.denom) == 0:
+        if len(self.denom) == 0 or 1 in self.denom:
             self.denom = [1, ]
 
     """
@@ -155,7 +155,7 @@ class RationalFrac:
         return int(float(self))
 
     def __repr__(self) -> str:
-        s = '-' if self.neg else ''
+        s = '-' if self.neg else ' '
         if 0 in self.numer:
             s += '0'
         elif 0 in self.denom:
@@ -198,11 +198,17 @@ class RationalFrac:
                     denom_diff_self.remove(factor)
                     denom_diff_other.remove(factor)
 
+            # Filter out ones:
+            denom_diff_self = list(filter(lambda i: i != 1, denom_diff_self))
+            denom_diff_other = list(filter(lambda i: i != 1, denom_diff_other))
+
             # Calculate the new numerator:
             numer_self: int = reduce(mul, self.numer + denom_diff_other, 1)
             numer_other: int = reduce(mul, other.numer + denom_diff_self, 1)
-            numer_self *= -1 if self.neg else 1
-            numer_other *= -1 if self.neg else 1
+            if self.neg:
+                numer_self *= -1
+            if other.neg:
+                numer_other *= -1
             numer = numer_self + numer_other
 
             # Create the new fraction:
