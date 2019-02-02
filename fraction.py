@@ -21,6 +21,8 @@ def factorize(num: int, denom: bool = False) -> [int, ]:
               419, 421, 431, 433, 439, 443, 449, 457, 461, 463,
               467, 479, 487, 491, 499, 503, 509, 521, 523, 541)
     factors = []
+    if num == 0:
+        return [0, ]
     if num == 1 and not denom:
         return [1, ]
     for prime in primes:
@@ -29,8 +31,9 @@ def factorize(num: int, denom: bool = False) -> [int, ]:
         while num % prime == 0:
             factors.append(prime)
             num = int(round(num / prime))
-    if num != 1:
-        print(num)
+    if num != 1 and num != 0:
+        # TODO: make it find larger primes to avoid this problem.
+        print('num is:', num)
         raise ArithmeticError(
             'did not finish prime factorization.')
     return factors
@@ -111,17 +114,13 @@ class RationalFrac:
                         'hmm. looks like making this a ' +
                         'fraction might be messy...')
                 numer = int(round(numer * 10 ** exp))
-                print(numer)
                 self.numer = factorize(numer)
                 self.denom = [2, 5] * exp
 
         # If initialized with a numerator and denominator:
         elif isinstance(numer, int) and isinstance(denom, int):
             self.neg = not ((numer < 0) == (denom < 0))
-            if numer == 0:
-                self.numer = [0, ]
-            else:
-                self.numer = factorize(abs(numer))
+            self.numer = factorize(abs(numer))
             if denom == 0:
                 raise ZeroDivisionError(
                     'cannot initialize with a denominator of zero.')
@@ -133,7 +132,6 @@ class RationalFrac:
                 'fraction with given parameters')
         # cleanup:
         self.simplify()
-        print(self.numer)
 
     def simplify(self):
         """
@@ -158,7 +156,8 @@ class RationalFrac:
 
         # If numer was denom, or some operations
         # resulted in multiple ones in numer:
-        if len(self.numer) == 0 or 1 in self.numer:
+        self.numer = list(filter(lambda fac: fac != 1, self.numer))
+        if len(self.numer) == 0:
             self.numer = [1, ]
         if 1 in self.denom:
             self.denom = []
@@ -189,7 +188,6 @@ class RationalFrac:
         return s
 
     def __repr__(self) -> str:
-        print(self.numer)
         s = '-' if self.neg else '+'
         if 0 in self.numer:
             s += '0'
@@ -222,8 +220,7 @@ class RationalFrac:
     def __add__(self, other):
         """Returns the sum of this fraction and other."""
         if isinstance(other, RationalFrac):
-            if (self.denom == [0, ] or
-                    other.denom == [0, ]):
+            if 0 in self.denom or 0 in other.denom:
                 raise ZeroDivisionError(
                     'cannot add when either ' +
                     'operand is undefined.')
@@ -249,6 +246,7 @@ class RationalFrac:
             # Create the new fraction:
             fsum = RationalFrac(0, empty=True)
             fsum.numer = factorize(abs(numer))
+            print('add says adjusted numer is:', fsum.numer)
             fsum.denom = self.denom + diff_other
             fsum.neg = numer < 0
             fsum.simplify()
@@ -373,11 +371,24 @@ class RationalFrac:
             return NotImplemented
 
 
-# __prime_factors()
-frac0 = RationalFrac(4.5)
-frac1 = RationalFrac(-0.125)
-frac2 = RationalFrac(0.99999)
-f = [frac0, frac1, frac2]
-print('float(-0.125) =', float(f[1]))
-print('float(0.99999) =', float(f[2]))
-print(f)
+def mini_tests():
+    print('\n======================================')
+    print('fraction.py @ mini_tests: ////////////\n')
+    # __prime_factors()
+    frac0 = RationalFrac(4.5)
+    frac1 = RationalFrac(-0.125)
+    frac2 = RationalFrac(0.99999)
+    f = [frac0, frac1, frac2]
+    print('float(-0.125) =', float(f[1]))
+    print('float(0.99999) =', float(f[2]))
+    print('9/2 + -1/8 =', f[0] + f[1])
+    print('9/2 * -1/8 =', f[0] * f[1])
+    print('-1/8 * 9/2 =', f[1] * f[0])
+    print(f)
+    print('frac(-0/1) + frac(-0/1) =',
+          RationalFrac(-0) + RationalFrac(-0))
+    print('\nfraction.py @ end of mini_tests //////')
+    print('======================================\n')
+
+
+mini_tests()

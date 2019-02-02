@@ -440,41 +440,49 @@ class Vector(list):
 
 
 # Small tests:
-frac1 = RationalFrac(0.125)
-print(frac1)
-vec1 = Vector([0, 0.5, 2])
-mtx1 = Matrix([[0, 4.5],  # [0, 11]
-               [2, 3]])   # [2,  3]
-print(RationalFrac(-0) + RationalFrac(-0))  # TODO: AAAAAAAAAAAAAAAAAA
-# print(frac1 ** -2)
-# print(vec1)
-# print(5 * vec1)
-# print(mtx1)
-# print(mtx1 @ mtx1)
-# print(2 * mtx1)
-# print(2 * mtx1 @ mtx1)
-# TODO: Test vector cross method.
-# print((2 * mtx1 @ mtx1).det(), 'is ', 18 * 36 - 27 * 12, '?')
-i5 = Matrix.identity(5)
-square3_0 = Matrix([
-    [-2, 2, -3],
-    [-1, 1, 3],
-    [2, 0, -1]
-])
-square3_1 = Matrix([
-    [1, 2, 4],
-    [-1, 3, 0],
-    [4, 1, 0]
-])
-print(square3_0)
-print(square3_0.det(), 'vs 18')
-print(square3_1)
-print(square3_1.det(), 'vs -52')
-# print(i5)
-# i5[0][0] = frac1
-# frac1 *= 2
-# i5[0] *= 2
-# print(i5, frac1)
-print(vec1)
-# print(vec1 * vec1)
-# print([0, 1, 0] + vec1)
+def mini_tests():
+    print('\n======================================')
+    print('matrices.py @ mini_tests: ////////////\n')
+    frac1 = RationalFrac(0.125)
+    print(frac1)
+    vec1 = Vector([0, 0.5, 2])
+    mtx1 = Matrix([[0, 4.5],  # [0, 11]
+                   [2, 3]])  # [2,  3]
+    RationalFrac(-0)
+    # print(frac1 ** -2)
+    # print(vec1)
+    # print(5 * vec1)
+    # print(mtx1)
+    # print(mtx1 @ mtx1)
+    # print(2 * mtx1)
+    # print(2 * mtx1 @ mtx1)
+    # TODO: Test vector cross method.
+    # print((2 * mtx1 @ mtx1).det(), 'is ', 18 * 36 - 27 * 12, '?')
+    i5 = Matrix.identity(5)
+    square3_0 = Matrix([
+        [-2, 2, -3],
+        [-1, 1, 3],
+        [2, 0, -1]
+    ])
+    square3_1 = Matrix([
+        [1, 2, 4],
+        [-1, 3, 0],
+        [4, 1, 0]
+    ])
+    print(square3_0)
+    print(square3_0.det(), 'vs 18')
+    print(square3_1)
+    print(square3_1.det(), 'vs -52')
+    # print(i5)
+    # i5[0][0] = frac1
+    # frac1 *= 2
+    # i5[0] *= 2
+    # print(i5, frac1)
+    print(vec1)
+    # print(vec1 * vec1)
+    # print([0, 1, 0] + vec1)
+    print('\nmatrices.py @ end of mini_tests //////')
+    print('======================================\n')
+
+
+mini_tests()
