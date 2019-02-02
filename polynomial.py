@@ -1,6 +1,6 @@
 from numbers import Number
 
-from fraction import RationalFrac
+from rfrac import RationalFrac
 
 
 class Monomial(dict):

@@ -1,8 +1,10 @@
 from functools import reduce
-from math import sqrt, pi, ceil, cos, sin
 from numbers import Number
 
-from fraction import RationalFrac
+import rfrac
+from vector import Vector
+
+RF = rfrac.RationalFrac
 
 
 class MatrixSizeError(Exception):
@@ -27,11 +29,30 @@ class Matrix(list):
     def __init__(self, rows: [[], ]):
         """
         Requires that all elements of m
-        are lists of equal length.
+        are lists or Vector objects of equal length.
         """
         self.nrows = len(rows)
         self.ncols = len(rows[0])
         super().__init__([Vector(row) for row in rows])
+
+    def __str__(self):
+        s = ''
+        contents = []
+        for vec in self:
+            contents.extend(vec)
+        width = max(map(lambda frac: len(str(frac)), contents))
+        if all(map(lambda frac: str(frac).startswith(' '), contents)):
+            for row in self:
+                rs = ', '.join(map(
+                    lambda f: f.__str__().lstrip()
+                               .center(width - 1), row))
+                s += '[%s]\n' % rs
+        else:
+            for row in self:
+                rs = ', '.join(map(
+                    lambda f: f.__str__().center(width), row))
+                s += '[%s]\n' % rs
+        return s
 
     def is_square(self):
         return self.nrows == self.ncols
@@ -109,7 +130,7 @@ class Matrix(list):
             for row in self[i+1:]:
                 row += -row[i + free_vars] * self[i]
 
-    def det(self) -> (RationalFrac, None):
+    def det(self) -> (RF, None):
         """ Returns the determinant of this matrix if it is square. """
         if self.is_square():
             rows = list(range(self.nrows))
@@ -121,7 +142,7 @@ class Matrix(list):
             raise MatrixSizeError(
                 'cannot take determinant: matrix not square.')
 
-    def recursive_det(self, rows: [int, ], cols: [int, ]) -> RationalFrac:
+    def recursive_det(self, rows: [int, ], cols: [int, ]) -> RF:
         """
         Private helper for det(). Recursive function.
         cols and rows are chopped up index slices.
@@ -131,16 +152,16 @@ class Matrix(list):
             # this implies len(cols) is also 1.
             return self[rows[0]][cols[0]]
         else:
-            sign = RationalFrac(1)
-            det = RationalFrac(0)
+            sign = RF(1)
+            det = RF(0)
             for col in cols:
                 _cols = cols.copy()
                 _cols.remove(col)
                 sub_sub_det = self.recursive_det(rows[1:], _cols)
                 sub_det = sign * self[rows[0]][col] * sub_sub_det
 
-                print(rows[0], col, rows[1:], _cols, ':',
-                      self[rows[0]][col], sub_sub_det, sub_det, sub_det.denom)
+                # print(rows[0], col, rows[1:], _cols, ':',
+                #       self[rows[0]][col], sub_sub_det, sub_det, sub_det.denom)
                 det += sub_det
                 sign = -sign
             return det
@@ -189,7 +210,7 @@ class Matrix(list):
             ])
 
         # Operand 2 is a scalar:
-        elif isinstance(other, (RationalFrac, Number)):
+        elif isinstance(other, (RF, Number)):
             return self.__rmul__(other)
 
         # Unexpected second operand:
@@ -201,7 +222,7 @@ class Matrix(list):
         Multiplies this matrix by a leading scalar.
         Returns the product.
         """
-        if isinstance(other, (RationalFrac, Number)):
+        if isinstance(other, (RF, Number)):
             prod = []
             # Multiply each vector-row by the scalar
             for r in range(self.nrows):
@@ -209,19 +230,6 @@ class Matrix(list):
             return Matrix(prod)
         else:
             return NotImplemented
-
-    def __str__(self):
-        s = ''
-        contents = []
-        for vec in self:
-            contents.extend(vec)
-        width = max(map(lambda frac: len(str(frac)), contents))
-
-        for row in self:
-            rs = ', '.join(map(
-                lambda f: f.__str__().center(width), row))
-            s += '[%s]\n' % rs
-        return s
 
     def __eq__(self, other):
         """
@@ -250,210 +258,28 @@ class Matrix(list):
     @staticmethod
     def ones(n: int):
         """ Returns an n x n matrix of all ones. """
-        return Matrix([[RationalFrac(1)] * n] * n)
+        return Matrix([[RF(1)] * n] * n)
 
     @staticmethod
     def zeros(n: int):
         """ Returns an n x n matrix of all zeros. """
-        return Matrix([[RationalFrac(0)] * n] * n)
+        return Matrix([[RF(0)] * n] * n)
 
 
-class Vector(list):
-    """
-    A vector. All entries are Fraction objects.
-    """
-    # TODO: once Fraction class is done,
-    #  refactor to use it instead of RationalFrac
-    #  Also refactor corresponding parts of Matrix class.
-
-    def __init__(self, v: list):
-        """
-        Requires that all elements of v
-        are Numbers. Initialize self with
-        the fraction versions of v's entries.
-
-        IMPORTANT: Does not initialize with copies
-        of RationalFrac instances where provided.
-        External changes will be reflected in
-        the corresponding entries of THIS matrix.
-        """
-        vec = [n if isinstance(n, RationalFrac)
-               else RationalFrac(n) for n in v]
-        super().__init__(vec)
-
-    def __setitem__(self, key, value):
-        """ Performs type-checking and appropriate conversions. """
-        if isinstance(value, RationalFrac):
-            super().__setitem__(key, value)
-        elif isinstance(value, (int, float)):
-            super().__setitem__(key, RationalFrac(value))
-        else:
-            raise TypeError(
-                'can only set int, float, or ' +
-                'RationalFrac type objects in Vector.')
-
-    def __add__(self, other):
-        if isinstance(other, (Vector, list, tuple)):
-            if len(self) != len(other):
-                raise MatrixSizeError(
-                    'cannot add vectors: unequal lengths.')
-            else:
-                return Vector([
-                    self[i] + other[i]
-                    for i in range(len(self))
-                ])
-        else:
-            return NotImplemented
-
-    def __iadd__(self, other):
-        if isinstance(other, Vector):
-            if len(self) != len(other):
-                raise MatrixSizeError(
-                    'cannot add vectors: unequal lengths.')
-            else:
-                for i in range(len(self)):
-                    self[i] = self[i] + other
-        else:
-            return NotImplemented
-
-    def __radd__(self, other):
-        if isinstance(other, list):
-            return self.__add__(other)
-
-    def norm(self):
-        """ Returns the 'length' of the vector. """
-        # Equivalent to sqrt(sum(self.dot(self))):
-        return sqrt(sum(map(lambda x: x ** 2, self)))
-
-    @staticmethod
-    def rot_matrix(theta: float, size: int, axis: str):
-        """ Returns a rotation matrix """
-        # TODO: This sucks. When monomials and functions are implemented,
-        #  support them in matrices and call something
-        #  like: " rm[size][axis].eval({'o': o}) "
-        rm = {
-            2: {
-                '': Matrix([[cos(theta), -sin(theta)],
-                            [sin(theta), cos(theta)]])
-            },
-            3: {
-                'x': Matrix([[1, 0, 0],
-                             [0, cos(theta), -sin(theta)],
-                             [0, sin(theta), cos(theta)]]),
-                'y': Matrix([[cos(theta), 0, sin(theta)],
-                             [0, 1, 0],
-                             [-sin(theta), 0, cos(theta)]]),
-                'z': Matrix([[cos(theta), -sin(theta), 0],
-                             [sin(theta), cos(theta), 0],
-                             [0, 0, 1]])
-            }
-        }  # Rotation matrices based on size
-        return rm[size][axis]
-
-    def rot(self, o, axis=''):
-        """
-        Returns a rotated view of a vector in space.
-        The rotation is counterclockwise by theta,
-        about the specified axis when relevant.
-        """
-        if o < 0:
-            o = ceil(-o / 2 / pi) * 2 * pi + o
-        o %= 2 * pi
-        return Vector.rot_matrix(0, len(self), axis) @ self
-
-    def transform(self):
-        """Return a [1 x len(self)] matrix"""
-        return Matrix(self)
-
-    def dot(self, other):
-        """
-        If the vectors are of equal vector length,
-        Returns the dot product of this and other.
-        """
-        if (isinstance(other, Vector) and
-                len(self) == len(other)):
-            prod = [self[i] * other[i] for i in range(len(self))]
-            return Vector(prod)
-        else:
-            raise MatrixSizeError('vector lengths incompatible.')
-
-    def __mul__(self, *others):
-        """ Vector cross product. """
-        if isinstance(others[0], (int, float, RationalFrac)):
-            return self.__rmul__(others[0])
-
-        # TODO: reconsider *others:
-        #  not suited for parsing user expressions.
-        if len(others) != len(self) - 2:
-            raise MatrixSizeError(
-                'not enough lists/vectors to perform cross-product.')
-        elif any(map(lambda v: len(v) != len(self), others)):
-            raise MatrixSizeError(
-                'the other lists/vectors are not all of equal length.')
-
-        # Inputs verified as valid. setup matrix:
-        mtx = [[1 if i % 2 == 0 else -1
-                for i in range(len(self))],
-               self]
-        for other in others:
-            mtx.append(other)
-        mtx = Matrix(mtx)
-
-        # Calculate the cross product:
-        cross = []
-        rows = list(range(1, mtx.nrows))
-        cols = list(range(len(self)))
-        for c in cols:
-            _cols = cols.copy()
-            _cols.remove(c)
-            cross.append(mtx[0][c] * mtx.recursive_det(rows, _cols))
-        return Vector(cross)
-
-    def __rmul__(self, other):
-        """ Scalar multiplication. """
-        if isinstance(other, RationalFrac):
-            return Vector([
-                other * entry for entry in self
-            ])
-        elif isinstance(other, (int, float)):
-            f_other = RationalFrac(other)
-            return Vector([
-                f_other * entry for entry in self
-            ])
-        else:
-            return NotImplemented
-
-    def __eq__(self, other):
-        """
-        Checks if all corresponding pairs of
-        elements are equal using __eq__().
-        """
-        if not isinstance(other, Vector):
-            return False
-        elif len(self) != len(other):
-            return False
-        else:
-            return all(map(
-                lambda i: self[i].__eq__(other[i]),
-                list(range(len(self)))
-            ))
-
-
-# Small tests:
-def mini_tests():
-    print('\n======================================')
-    print('matrices.py @ mini_tests: ////////////\n')
-    frac1 = RationalFrac(0.125)
-    print(frac1)
+def matrix_tests():
+    print('\n==========================================')
+    print('matrix.py @ matrix_tests: ////////////////\n')
+    frac1 = RF(0.125)
+    # print(frac1)
     vec1 = Vector([0, 0.5, 2])
     mtx1 = Matrix([[0, 4.5],  # [0, 11]
                    [2, 3]])  # [2,  3]
-    RationalFrac(-0)
+    RF(-0)
     # print(frac1 ** -2)
     # print(vec1)
     # print(5 * vec1)
-    # print(mtx1)
-    # print(mtx1 @ mtx1)
+    print(mtx1)
+    print(mtx1 @ mtx1)
     # print(2 * mtx1)
     # print(2 * mtx1 @ mtx1)
     # TODO: Test vector cross method.
@@ -470,9 +296,9 @@ def mini_tests():
         [4, 1, 0]
     ])
     print(square3_0)
-    print(square3_0.det(), 'vs 18')
+    print('actual =', square3_0.det(), 'and expected = 18')
     print(square3_1)
-    print(square3_1.det(), 'vs -52')
+    print('actual =', square3_1.det(), 'and expected = -52')
     # print(i5)
     # i5[0][0] = frac1
     # frac1 *= 2
@@ -481,8 +307,9 @@ def mini_tests():
     print(vec1)
     # print(vec1 * vec1)
     # print([0, 1, 0] + vec1)
-    print('\nmatrices.py @ end of mini_tests //////')
-    print('======================================\n')
+    print('\nmatrix.py @ end of matrix_tests //////////')
+    print('==========================================\n')
 
 
-mini_tests()
+if __name__ == '__main__':
+    matrix_tests()

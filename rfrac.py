@@ -51,24 +51,15 @@ def __prime_factors(start=2):
         print(factors[i: i + 10])
 
 
-class Fraction(dict):
-    """
-    A real-valued fraction.
-    Consists of a single dict from prime factors,
-        to their powers, which are rational fractions.
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
 class RationalFrac:
     """
     A rational-valued fraction.
 
     Consists of two lists of integer-valued prime factors-
-        one for the numerator, and one for the denominator.
+    one for the numerator, and one for the denominator.
     Each operation preserves that the fraction is simplified.
+
+    Special cases: When an integer, self.denom = [].
     """
     numer: [int, ] = []
     denom: [int, ] = []  # empty if denominator is 1
@@ -246,7 +237,6 @@ class RationalFrac:
             # Create the new fraction:
             fsum = RationalFrac(0, empty=True)
             fsum.numer = factorize(abs(numer))
-            print('add says adjusted numer is:', fsum.numer)
             fsum.denom = self.denom + diff_other
             fsum.neg = numer < 0
             fsum.simplify()
@@ -278,6 +268,8 @@ class RationalFrac:
         as having an empty list as its denom field.
         """
         recip = RationalFrac(0, empty=True)
+        if 0 in self.numer:
+            raise ZeroDivisionError('the reciprocal of zero is undefined.')
         recip.numer = [1, ] if len(self.denom) == 0 else self.denom.copy()
         recip.denom = [] if 1 in self.numer else self.numer.copy()
         recip.neg = bool(self.neg)
@@ -328,7 +320,7 @@ class RationalFrac:
         else:
             return NotImplemented
 
-    def __pow__(self, power:int, modulo=None):
+    def __pow__(self, power: int, modulo=None):
         """ Returns this fraction to the specified power. """
         assert isinstance(power, int)
         if power == 0:
@@ -366,14 +358,16 @@ class RationalFrac:
         if isinstance(other, (RationalFrac, int, float)):
             f_other = RationalFrac(other) if isinstance(
                 other, (int, float)) else other
+            # TODO: Test when they are equal.
             return (self - f_other).neg
         else:
             return NotImplemented
 
 
-def mini_tests():
-    print('\n======================================')
-    print('fraction.py @ mini_tests: ////////////\n')
+def rational_frac_tests():
+    """ Some small test cases for the RationalFrac class. """
+    print('\n==========================================')
+    print('rfrac.py @ rational_frac_tests: //////////\n')
     # __prime_factors()
     frac0 = RationalFrac(4.5)
     frac1 = RationalFrac(-0.125)
@@ -387,8 +381,9 @@ def mini_tests():
     print(f)
     print('frac(-0/1) + frac(-0/1) =',
           RationalFrac(-0) + RationalFrac(-0))
-    print('\nfraction.py @ end of mini_tests //////')
-    print('======================================\n')
+    print('\nrfrac.py @ end of rational_frac_tests ////')
+    print('==========================================\n')
 
 
-mini_tests()
+if __name__ == '__main__':
+    rational_frac_tests()
