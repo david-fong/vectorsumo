@@ -1,6 +1,5 @@
 import inspect
 from functools import reduce
-from numbers import Number
 from operator import mul
 
 
@@ -94,14 +93,15 @@ class RationalFrac:
                 if numer < 0.0:
                     self.neg = True
                     numer = abs(numer)
-                exp = len(str(numer - int(numer)))
+                exp = len(str(numer - int(numer))) - 2
 
                 # TODO: this is an experimental 'give-up':
                 if exp >= 100:
                     raise ValueError(
-                        'hmm looks like making this a ' +
+                        'hmm. looks like making this a ' +
                         'fraction might be messy...')
                 numer = int(round(numer * 10 ** exp))
+                print(numer)
                 self.numer = factorize(numer)
                 self.denom = [2, 5] * exp
 
@@ -178,6 +178,7 @@ class RationalFrac:
         return s
 
     def __repr__(self) -> str:
+        print(self.numer)
         s = '-' if self.neg else '+'
         if 0 in self.numer:
             s += '0'
@@ -353,13 +354,19 @@ class RationalFrac:
 
     def __lt__(self, other):
         """ Returns True if the fractions are equal in value. """
-        if isinstance(other, (RationalFrac, Number)):
-            f_other = RationalFrac(other) if isinstance(other, Number) else other
+        if isinstance(other, (RationalFrac, int, float)):
+            f_other = RationalFrac(other) if isinstance(
+                other, (int, float)) else other
             return (self - f_other).neg
         else:
             return NotImplemented
 
 
-# test = Fraction(4.5)
-# print(test)
 # __prime_factors()
+frac0 = RationalFrac(4.5)
+frac1 = RationalFrac(-0.125)
+frac2 = RationalFrac(0.99999)
+f = [frac0, frac1, frac2]
+print('float(-0.125) =', float(f[1]))
+print('float(0.99999) =', float(f[1]))
+print(f)
