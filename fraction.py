@@ -10,33 +10,42 @@ def factorize(num: int, denom: bool = False) -> [int, ]:
     (unless the number is 1).
     """
     # assert isinstance(num, int)
-    primes = (2, 3, 5, 7, 9, 11, 13, 17, 19, 23, 29,
-              31, 37, 41, 43, 47, 53, 59, 61, 71,
-              79, 83, 89, 97, 101, 103, 107, 109,
-              113, 127, 131, 137, 139, 149, 151,
-              157, 163, 167, 173, 179, 181, 191,
-              193, 197, 199, 211, 223, 227, 229)
+    primes = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
+              31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+              73, 79, 83, 89, 97, 101, 103, 107, 109, 113,
+              127, 131, 137, 139, 149, 151, 157, 163, 167, 173,
+              179, 181, 191, 193, 197, 199, 211, 223, 227, 229,
+              233, 239, 241, 251, 257, 263, 269, 271, 277, 281,
+              283, 293, 307, 311, 313, 317, 331, 337, 347, 349,
+              353, 359, 367, 373, 379, 383, 389, 397, 401, 409,
+              419, 421, 431, 433, 439, 443, 449, 457, 461, 463,
+              467, 479, 487, 491, 499, 503, 509, 521, 523, 541)
     factors = []
-    if num is 1 and not denom:
+    if num == 1 and not denom:
         return [1, ]
     for prime in primes:
         if prime > num:
             break
-        while num % prime is 0:
+        while num % prime == 0:
             factors.append(prime)
             num = int(round(num / prime))
+    if num != 1:
+        print(num)
+        raise ArithmeticError(
+            'did not finish prime factorization.')
     return factors
 
 
 def __prime_factors(start=2):
     factors = [2]
     num = start
-    bound = 1000
+    bound = 10000
     while num < bound:
-        if not any(map(lambda f: num % f is 0, factors)):
+        if not any(map(lambda fac: num % fac == 0, factors)):
             factors.append(num)
         num += 1
-    print(factors)
+    for i in range(0, int(bound / 10), 10):
+        print(factors[i: i + 10])
 
 
 class Fraction(dict):
@@ -86,14 +95,15 @@ class RationalFrac:
 
         # If initialized with a float:
         if isinstance(numer, float):
-            if numer is 0.0:
+            if numer == 0.0:
                 self.numer = [0, ]
                 self.denom = []
             else:
                 if numer < 0.0:
                     self.neg = True
                     numer = abs(numer)
-                exp = len(str(numer - int(numer))) - 2
+                exp = len(str(numer).split('.')[1])
+                # numer = int(str(numer).split('.')[1])
 
                 # TODO: this is an experimental 'give-up':
                 if exp >= 100:
@@ -108,11 +118,11 @@ class RationalFrac:
         # If initialized with a numerator and denominator:
         elif isinstance(numer, int) and isinstance(denom, int):
             self.neg = not ((numer < 0) == (denom < 0))
-            if numer is 0:
+            if numer == 0:
                 self.numer = [0, ]
             else:
                 self.numer = factorize(abs(numer))
-            if denom is 0:
+            if denom == 0:
                 raise ZeroDivisionError(
                     'cannot initialize with a denominator of zero.')
             self.denom = factorize(abs(denom), denom=True)
@@ -123,6 +133,7 @@ class RationalFrac:
                 'fraction with given parameters')
         # cleanup:
         self.simplify()
+        print(self.numer)
 
     def simplify(self):
         """
@@ -173,7 +184,7 @@ class RationalFrac:
             s += 'undef'
         else:
             s += '%d' % self.numer_prod()
-            if len(self.denom) is not 0:
+            if len(self.denom) != 0:
                 s += '/%d' % self.denom_prod()
         return s
 
@@ -193,7 +204,7 @@ class RationalFrac:
         return reduce(mul, self.numer, 1)
 
     def denom_prod(self) -> int:
-        if len(self.denom) is 0:
+        if len(self.denom) == 0:
             return 1
         else:
             return reduce(mul, self.denom, 1)
@@ -211,8 +222,8 @@ class RationalFrac:
     def __add__(self, other):
         """Returns the sum of this fraction and other."""
         if isinstance(other, RationalFrac):
-            if (self.denom is [0, ] or
-                    other.denom is [0, ]):
+            if (self.denom == [0, ] or
+                    other.denom == [0, ]):
                 raise ZeroDivisionError(
                     'cannot add when either ' +
                     'operand is undefined.')
@@ -269,7 +280,7 @@ class RationalFrac:
         as having an empty list as its denom field.
         """
         recip = RationalFrac(0, empty=True)
-        recip.numer = [1, ] if len(self.denom) is 0 else self.denom.copy()
+        recip.numer = [1, ] if len(self.denom) == 0 else self.denom.copy()
         recip.denom = [] if 1 in self.numer else self.numer.copy()
         recip.neg = bool(self.neg)
         return recip
@@ -283,7 +294,7 @@ class RationalFrac:
             prod = RationalFrac(0, empty=True)
             prod.numer = self.numer + f_other.numer
             prod.denom = self.denom + f_other.denom
-            prod.neg = not (self.neg is f_other.neg)
+            prod.neg = not (self.neg == f_other.neg)
             prod.simplify()
             return prod
         else:
@@ -296,7 +307,7 @@ class RationalFrac:
                 other, (int, float)) else other
             self.numer.extend(f_other.numer)
             self.denom.extend(f_other.denom)
-            self.neg = not (self.neg is f_other.neg)
+            self.neg = not (self.neg == f_other.neg)
             self.simplify()
             return self
         else:
@@ -322,7 +333,7 @@ class RationalFrac:
     def __pow__(self, power:int, modulo=None):
         """ Returns this fraction to the specified power. """
         assert isinstance(power, int)
-        if power is 0:
+        if power == 0:
             return RationalFrac(1)
         elif power < 0:
             fexp = self.reciprocal()
@@ -348,7 +359,7 @@ class RationalFrac:
                 other, (int, float)) else other
             return (self.numer == f_other.numer and
                     self.denom == f_other.denom and
-                    self.neg is f_other.neg)
+                    self.neg == f_other.neg)
         else:
             return NotImplemented
 
@@ -368,5 +379,5 @@ frac1 = RationalFrac(-0.125)
 frac2 = RationalFrac(0.99999)
 f = [frac0, frac1, frac2]
 print('float(-0.125) =', float(f[1]))
-print('float(0.99999) =', float(f[1]))
+print('float(0.99999) =', float(f[2]))
 print(f)

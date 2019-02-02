@@ -91,12 +91,12 @@ class Matrix(list):
         free_vars = 0
         for i in range(self.nrows):
             # Find a row where the target col is not zero:
-            if float(red[i][i + free_vars]) is 0.0:
+            if float(red[i][i + free_vars]) == 0.0:
                 _i = i + 1
                 while (_i < self.nrows and
-                       float(red[_i][i + free_vars]) is 0.0):
+                       float(red[_i][i + free_vars]) == 0.0):
                     _i += 1
-                if _i is self.nrows:
+                if _i == self.nrows:
                     free_vars += 1
                     continue
                 # Switch this row with one
@@ -127,7 +127,7 @@ class Matrix(list):
         cols and rows are chopped up index slices.
         """
         # Terminating condition:
-        if len(rows) is 1:
+        if len(rows) == 1:
             # this implies len(cols) is also 1.
             return self[rows[0]][cols[0]]
         else:
@@ -150,7 +150,7 @@ class Matrix(list):
         if not self.is_square():
             raise MatrixSizeError(
                 'cannot invert a non-square matrix.')
-        elif self.det() is 0:
+        elif self.det() == 0:
             raise ArithmeticError(
                 'matrix not homogeneous. cannot compute inverse.')
 
@@ -168,7 +168,7 @@ class Matrix(list):
         """
         # Matrix multiplied be another matrix:
         if isinstance(other, Matrix):
-            if self.ncols is not other.nrows:
+            if self.ncols != other.nrows:
                 raise MatrixSizeError('op1 #cols != op2 #rows')
             prod = []
             other_t = other.transpose()
@@ -181,7 +181,7 @@ class Matrix(list):
 
         # Matrix multiplied by a vector:
         elif isinstance(other, Vector):
-            if self.ncols is not len(other):
+            if self.ncols != len(other):
                 raise MatrixSizeError('op1 #cols != op2 length')
             return Vector([
                 sum(self[r].dot(other))
@@ -230,8 +230,8 @@ class Matrix(list):
         """
         if not isinstance(other, Matrix):
             return False
-        elif not (self.nrows is other.nrows and
-                  self.ncols is other.ncols):
+        elif not (self.nrows == other.nrows and
+                  self.ncols == other.ncols):
             return False
         else:
             return all(map(
@@ -294,7 +294,7 @@ class Vector(list):
 
     def __add__(self, other):
         if isinstance(other, (Vector, list, tuple)):
-            if len(self) is not len(other):
+            if len(self) != len(other):
                 raise MatrixSizeError(
                     'cannot add vectors: unequal lengths.')
             else:
@@ -307,7 +307,7 @@ class Vector(list):
 
     def __iadd__(self, other):
         if isinstance(other, Vector):
-            if len(self) is not len(other):
+            if len(self) != len(other):
                 raise MatrixSizeError(
                     'cannot add vectors: unequal lengths.')
             else:
@@ -371,7 +371,7 @@ class Vector(list):
         Returns the dot product of this and other.
         """
         if (isinstance(other, Vector) and
-                len(self) is len(other)):
+                len(self) == len(other)):
             prod = [self[i] * other[i] for i in range(len(self))]
             return Vector(prod)
         else:
@@ -392,7 +392,7 @@ class Vector(list):
                 'the other lists/vectors are not all of equal length.')
 
         # Inputs verified as valid. setup matrix:
-        mtx = [[1 if i % 2 is 0 else -1
+        mtx = [[1 if i % 2 == 0 else -1
                 for i in range(len(self))],
                self]
         for other in others:
