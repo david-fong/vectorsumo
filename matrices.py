@@ -5,6 +5,18 @@ from numbers import Number
 from fraction import RationalFrac
 
 
+class MatrixSizeError(Exception):
+    """
+    Used to raise Arithmetic exceptions when
+    operand matrix sizes are incompatible.
+    """
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
 class Matrix(list):
     """
     A matrix. A list of equal-length columns.
@@ -20,10 +32,6 @@ class Matrix(list):
         self.nrows = len(rows)
         self.ncols = len(rows[0])
         super().__init__([Vector(row) for row in rows])
-
-    # def __setitem__(self, key, value):
-    #     raise PermissionError(
-    #         'Matrix does not support row assignment.')
 
     def is_square(self):
         return self.nrows == self.ncols
@@ -130,8 +138,9 @@ class Matrix(list):
                 _cols.remove(col)
                 sub_sub_det = self.recursive_det(rows[1:], _cols)
                 sub_det = sign * self[rows[0]][col] * sub_sub_det
+
                 print(rows[0], col, rows[1:], _cols, ':',
-                      self[rows[0]][col], sub_sub_det, sub_det)
+                      self[rows[0]][col], sub_sub_det, sub_det, sub_det.denom)
                 det += sub_det
                 sign = -sign
             return det
@@ -214,6 +223,22 @@ class Matrix(list):
             s += '[%s]\n' % rs
         return s
 
+    def __eq__(self, other):
+        """
+        Checks if all corresponding pairs
+        of Vectors are equal using __eq__().
+        """
+        if not isinstance(other, Matrix):
+            return False
+        elif not (self.nrows is other.nrows and
+                  self.ncols is other.ncols):
+            return False
+        else:
+            return all(map(
+                lambda i: self[i].__eq__(other[i]),
+                list(range(self.nrows))
+            ))
+
     @staticmethod
     def identity(n: int):
         """ Returns an n x n identity matrix. """
@@ -233,18 +258,6 @@ class Matrix(list):
         return Matrix([[RationalFrac(0)] * n] * n)
 
 
-class MatrixSizeError(Exception):
-    """
-    Used to raise Arithmetic exceptions when
-    operand matrix sizes are incompatible.
-    """
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
-
-
 class Vector(list):
     """
     A vector. All entries are Fraction objects.
@@ -258,12 +271,26 @@ class Vector(list):
         Requires that all elements of v
         are Numbers. Initialize self with
         the fraction versions of v's entries.
+
+        IMPORTANT: Does not initialize with copies
+        of RationalFrac instances where provided.
+        External changes will be reflected in
+        the corresponding entries of THIS matrix.
         """
-        vec = [RationalFrac(n) for n in v]
+        vec = [n if isinstance(n, RationalFrac)
+               else RationalFrac(n) for n in v]
         super().__init__(vec)
 
     def __setitem__(self, key, value):
-        super().__setitem__(key, RationalFrac(value))
+        """ Performs type-checking and appropriate conversions. """
+        if isinstance(value, RationalFrac):
+            super().__setitem__(key, value)
+        elif isinstance(value, (int, float)):
+            super().__setitem__(key, RationalFrac(value))
+        else:
+            raise TypeError(
+                'can only set int, float, or ' +
+                'RationalFrac type objects in Vector.')
 
     def __add__(self, other):
         if isinstance(other, (Vector, list, tuple)):
@@ -352,7 +379,11 @@ class Vector(list):
 
     def __mul__(self, *others):
         """ Vector cross product. """
-        # TODO: reconsider *others: not suited for parsing user expressions.
+        if isinstance(others[0], (int, float, RationalFrac)):
+            return self.__rmul__(others[0])
+
+        # TODO: reconsider *others:
+        #  not suited for parsing user expressions.
         if len(others) != len(self) - 2:
             raise MatrixSizeError(
                 'not enough lists/vectors to perform cross-product.')
@@ -384,7 +415,7 @@ class Vector(list):
             return Vector([
                 other * entry for entry in self
             ])
-        elif isinstance(other, Number):
+        elif isinstance(other, (int, float)):
             f_other = RationalFrac(other)
             return Vector([
                 f_other * entry for entry in self
@@ -392,16 +423,30 @@ class Vector(list):
         else:
             return NotImplemented
 
+    def __eq__(self, other):
+        """
+        Checks if all corresponding pairs of
+        elements are equal using __eq__().
+        """
+        if not isinstance(other, Vector):
+            return False
+        elif len(self) != len(other):
+            return False
+        else:
+            return all(map(
+                lambda i: self[i].__eq__(other[i]),
+                list(range(len(self)))
+            ))
+
 
 # Small tests:
+frac1 = RationalFrac(0.125)
+print(frac1)
 vec1 = Vector([0, 0.5, 2])
 mtx1 = Matrix([[0, 4.5],  # [0, 11]
                [2, 3]])   # [2,  3]
-frac1 = RationalFrac(1)
-print(RationalFrac(-0) + RationalFrac(-0) + RationalFrac(-0))
-# print(frac1)
+print(RationalFrac(-0) + RationalFrac(-0))  # TODO: AAAAAAAAAAAAAAAAAA
 # print(frac1 ** -2)
-# print(frac1, frac1.numer, frac1.denom)
 # print(vec1)
 # print(5 * vec1)
 # print(mtx1)
@@ -426,8 +471,10 @@ print(square3_0.det(), 'vs 18')
 print(square3_1)
 print(square3_1.det(), 'vs -52')
 # print(i5)
-i5[0][0] = RationalFrac(2)
-# print(i5)
+# i5[0][0] = frac1
+# frac1 *= 2
+# i5[0] *= 2
+# print(i5, frac1)
 print(vec1)
 # print(vec1 * vec1)
 # print([0, 1, 0] + vec1)
