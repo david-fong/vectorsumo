@@ -119,7 +119,8 @@ class Matrix(list):
         cols and rows are chopped up index slices.
         """
         # Terminating condition:
-        if len(rows) is 1:  # implies len(rows) is 1
+        if len(rows) is 1:
+            # this implies len(cols) is also 1.
             return self[rows[0]][cols[0]]
         else:
             sign = RationalFrac(1)
@@ -127,8 +128,10 @@ class Matrix(list):
             for col in cols:
                 _cols = cols.copy()
                 _cols.remove(col)
-                det += (sign * self[rows[0]][col] *
-                        self.recursive_det(rows[1:], _cols))
+                sub_sum = (sign * self[rows[0]][col] *
+                           self.recursive_det(rows[1:], _cols))
+                print(rows[0], col, rows[1:], _cols, ':', sign, sub_sum, type(sub_sum))
+                det += sub_sum
                 sign = -sign
             return det
 
@@ -406,9 +409,16 @@ frac1 = RationalFrac(1)
 # TODO: Test vector cross method.
 # print((2 * mtx1 @ mtx1).det(), 'is ', 18 * 36 - 27 * 12, '?')
 i5 = Matrix.identity(5)
+square3 = Matrix([
+    [-2, 2, -3],
+    [-1, 1, 3],
+    [2, 0, -1]
+])
+print(square3)
+print(square3.det(), 'vs 18')
 # print(i5)
 i5[0][0] = RationalFrac(2)
 # print(i5)
 print(vec1)
-print(vec1 * vec1)
-print([0, 1, 0] + vec1)
+# print(vec1 * vec1)
+# print([0, 1, 0] + vec1)

@@ -121,6 +121,7 @@ class RationalFrac:
         if 0 in self.numer:
             self.numer = [0, ]
             self.denom = [1, ]
+            # TODO: self.neg = False
             return
         elif 0 in self.denom:
             self.denom = [0, ]
@@ -178,7 +179,7 @@ class RationalFrac:
         neg = RationalFrac(0, empty=True)
         neg.numer = self.numer.copy()
         neg.denom = self.denom.copy()
-        neg.neg = not self.neg
+        neg.neg = not self.neg  # TODO: if (0 in self.numer) else False
         return neg
 
     def __add__(self, other):
@@ -187,22 +188,27 @@ class RationalFrac:
             if (self.denom is [0, ] or
                     other.denom is [0, ]):
                 raise ZeroDivisionError
-            fsum = RationalFrac(0, empty=True)
 
-            # Get denominator factors not
-            # shared for self and other:
-            ds = self.denom.copy()
-            do = other.denom.copy()
+            # Get denominator factors not shared
+            # for self and other respectively:
+            denom_diff_self = self.denom.copy()
+            denom_diff_other = other.denom.copy()
             for factor in self.denom:
-                if factor in ds and factor in do:
-                    ds.remove(factor)
-                    do.remove(factor)
+                if factor in denom_diff_self and factor in denom_diff_other:
+                    denom_diff_self.remove(factor)
+                    denom_diff_other.remove(factor)
 
-            numer = \
-                reduce(mul, self.numer + ds, 1) + \
-                reduce(mul, other.numer + do, 1)
-            fsum.numer = factorize(numer)
-            fsum.denom = self.denom + do
+            # Calculate the new numerator:
+            numer_self: int = reduce(mul, self.numer + denom_diff_other, 1)
+            numer_other: int = reduce(mul, other.numer + denom_diff_self, 1)
+            numer_self *= -1 if self.neg else 1
+            numer_other *= -1 if self.neg else 1
+            numer = numer_self + numer_other
+
+            # Create the new fraction:
+            fsum = RationalFrac(0, empty=True)
+            fsum.numer = factorize(abs(numer))
+            fsum.denom = self.denom + denom_diff_other
             fsum.neg = numer < 0
             fsum.simplify()
             return fsum
@@ -212,7 +218,7 @@ class RationalFrac:
         else:
             return NotImplemented
 
-    def __iadd__(self, other):
+    def __radd__(self, other):
         if isinstance(other, (int, float)):
             return self.__add__(RationalFrac(other))
         else:
@@ -220,7 +226,7 @@ class RationalFrac:
 
     def __sub__(self, other):
         """Returns the difference between this fraction and other."""
-        return self + -other
+        return self.__add__(other.__neg__())
 
     """
     Multiplication, Division, and Exponents:
@@ -234,11 +240,14 @@ class RationalFrac:
 
     def __mul__(self, other):
         """ Returns the product of this and another fraction. """
-        if isinstance(other, RationalFrac):
+        if isinstance(other, (RationalFrac, int, float)):
+            f_other = RationalFrac(other) if isinstance(
+                other, (int, float)) else other
+
             prod = RationalFrac(0, empty=True)
-            prod.numer = self.numer + other.numer
-            prod.denom = self.denom + other.denom
-            prod.neg = not (self.neg is other.neg)
+            prod.numer = self.numer + f_other.numer
+            prod.denom = self.denom + f_other.denom
+            prod.neg = not (self.neg is f_other.neg)
             prod.simplify()
             return prod
         else:
@@ -252,13 +261,14 @@ class RationalFrac:
             self.denom.extend(f_other.denom)
             self.neg = not (self.neg is other < 1)
             self.simplify()
+            return self
         else:
             return NotImplemented
 
     def __rmul__(self, other):
         """ Returns the product of this and a constant. """
         if isinstance(other, (int, float)):
-            return RationalFrac(other) * self
+            return self.__mul__(RationalFrac(other))
         else:
             return NotImplemented
 
@@ -283,6 +293,7 @@ class RationalFrac:
             self.denom.extend(f_other.denom)
             self.neg = not (self.neg is other < 1)
             self.simplify()
+            return self
         else:
             return NotImplemented
 
