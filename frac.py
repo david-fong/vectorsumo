@@ -49,17 +49,6 @@ class Fraction(list):
     """
     Public-use, representation/observer methods:
     """
-    def __getitem__(self, factor):
-        """
-        Gets the power of factor,
-        or the RationalFrac if
-        factor is not in self.
-        """
-        return self.get(factor, RF(0))
-
-    def __setitem__(self, key, value):
-
-
     def __float__(self):
         pass
 
@@ -72,17 +61,6 @@ class Fraction(list):
     def __repr__(self):
         pass
 
-    def numer_prod(self):
-        # TODO: decide on what I want to return here.
-        #  Maybe a Fraction with positive exp values?
-        #  Then denom_prod would do something like
-        #   "self.reciprocal.numer_prod()".
-        numer = filter(lambda fac, exp: not exp.neg, self.items())
-        return reduce(mul, map(lambda fac, exp: fac.__pow__(exp), numer))
-
-    def denom_prod(self):
-        pass
-
     """
     Negation, Addition, and Subtraction:
     """
@@ -92,11 +70,6 @@ class Fraction(list):
         return negated
 
     def __add__(self, other):
-        # TODO: This will be tricky...
-        #  not sure what to do yet...
-        #  I think might need to use 0-degree
-        #      polynomials as expressions...
-        #  I thought I was so clever with this representation :|
         pass
 
     def __radd__(self, other):

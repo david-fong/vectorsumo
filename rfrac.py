@@ -87,26 +87,26 @@ class RationalFrac:
             self.neg = numer.neg
             return
 
-        # If initialized with a float:
-        if isinstance(numer, float):
-            if numer == 0.0:
-                self.numer = [0, ]
-                self.denom = []
-            else:
-                if numer < 0.0:
-                    self.neg = True
-                    numer = abs(numer)
-                exp = len(str(numer).split('.')[1])
-                # numer = int(str(numer).split('.')[1])
+        if numer == 0:
+            self.numer = [0, ]
+            self.denom = []
 
-                # TODO: this is an experimental 'give-up':
-                if exp >= 50:  # <- decimal places
-                    raise ValueError(
-                        'hmm. looks like making this into a ' +
-                        'fraction might be messy...')
-                numer = int(round(numer * 10 ** exp))
-                self.numer = factorize(numer)
-                self.denom = [2, 5] * exp
+        # If initialized with a float:
+        elif isinstance(numer, float):
+            if numer < 0.0:
+                self.neg = True
+                numer = abs(numer)
+            exp = len(str(numer).split('.')[1])
+            # numer = int(str(numer).split('.')[1])
+
+            # TODO: this is an experimental 'give-up':
+            if exp >= 50:  # <- decimal places
+                raise ValueError(
+                    'hmm. looks like making this into a ' +
+                    'fraction might be messy...')
+            numer = int(round(numer * 10 ** exp))
+            self.numer = factorize(numer)
+            self.denom = [2, 5] * exp
 
         # If initialized with a numerator and denominator:
         elif isinstance(numer, int) and isinstance(denom, int):
@@ -117,12 +117,22 @@ class RationalFrac:
                     'cannot initialize with a denominator of zero.')
             self.denom = factorize(abs(denom), denom=True)
 
+        # Unexpected argument as initialization value:
         else:
             raise TypeError(
                 'could not create a rational ' +
                 'fraction with given parameters')
-        # cleanup:
+
+        # If successful, cleanup:
         self.simplify()
+
+    def __copy__(self):
+        """ Returns a copy of this RationalFrac object. """
+        copy = RationalFrac(0, empty=True)
+        copy.numer = self.numer.copy()
+        copy.denom = self.denom.copy()
+        copy.neg = bool(self.neg)
+        return copy
 
     def simplify(self):
         """
@@ -175,7 +185,7 @@ class RationalFrac:
         """Public method to get the int value of this fraction."""
         return int(self.__float__())
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = '-' if self.neg else ' '
         if 0 in self.numer:
             s += '0'
@@ -199,7 +209,7 @@ class RationalFrac:
         return s
 
     """
-    Negation, Addition, and Subtraction:
+    Addition and Subtraction:
     """
     def __add__(self, other):
         """Returns the sum of this fraction and other."""
@@ -269,9 +279,7 @@ class RationalFrac:
         return recip
 
     def __neg__(self):
-        negated = RationalFrac(0, empty=True)
-        negated.numer = self.numer.copy()
-        negated.denom = self.denom.copy()
+        negated = self.__copy__()
         negated.neg = not self.neg  # TODO: if (0 in self.numer) else False
         return negated
 
@@ -292,12 +300,13 @@ class RationalFrac:
 
     def __imul__(self, other):
         """ Multiplies self by other(a constant) in-place. """
-        if isinstance(other, (RationalFrac, float, int)):
+        if isinstance(other, (RationalFrac, int, float)):
             f_other = RationalFrac(other) if isinstance(
                 other, (int, float)) else other
+
             self.numer.extend(f_other.numer)
             self.denom.extend(f_other.denom)
-            self.neg = not (self.neg == f_other.neg)
+            self.neg = not(self.neg == f_other.neg)
             self.simplify()
             return self
         else:
@@ -312,36 +321,55 @@ class RationalFrac:
 
     def __truediv__(self, other):
         """ Returns the quotient of this and another fraction. """
-        if isinstance(other, RationalFrac):
-            return self.__mul__(other.reciprocal())
+        if isinstance(other, (RationalFrac, int, float)):
+            f_other = RationalFrac(other) if isinstance(
+                other, (int, float)) else other
 
-        elif isinstance(other, (int, float)):
-            f_other = RationalFrac(other)
-            return self.__mul__(f_other.reciprocal())
+            quot = RationalFrac(0, empty=True)
+            quot.numer = self.numer + f_other.denom
+            quot.denom = self.denom + f_other.numer
+            quot.neg = not (self.neg == f_other.neg)
+            quot.simplify()
+            return quot
+        else:
+            return NotImplemented
+
+    def __itruediv__(self, other):
+        """ Divides self by other in place. """
+        if isinstance(other, (RationalFrac, int, float)):
+            f_other = RationalFrac(other) if isinstance(
+                other, (int, float)) else other
+
+            self.numer.extend(f_other.denom)
+            self.denom.extend(f_other.numer)
+            self.neg = not(self.neg == f_other.neg)
+            self.simplify()
+            return self
         else:
             return NotImplemented
 
     def __pow__(self, power, modulo=None):
-        """ Returns this fraction to the specified power. """
-        if isinstance(power, RationalFrac):
-            assert len(power.denom) == 0, 'expected integer-valued power'
-            return self.__pow__(power.__int__())
-
-        elif isinstance(power, int):
-            assert isinstance(power, int)
+        """
+        Returns this fraction to the specified power.
+        Requires that power has an equivalent integer value.
+        """
+        if isinstance(power, int):
             if power == 0:
                 return RationalFrac(1)
             elif power < 0:
                 fexp = self.reciprocal()
                 power = abs(power)
             else:
-                fexp = RationalFrac(self)
+                fexp = self.__copy__()
 
             fexp.numer *= power
             fexp.denom *= power
             fexp.neg = (power % 2 == 1) if self.neg else False
             return fexp
 
+        elif isinstance(power, RationalFrac):
+            assert len(power.denom) == 0, 'expected integer-valued power'
+            return self.__pow__(int(power))
         else:
             return NotImplemented
 
