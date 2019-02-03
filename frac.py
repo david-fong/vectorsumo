@@ -7,12 +7,11 @@ import rfrac
 RF = rfrac.RationalFrac
 
 
-class Fraction(dict):
+class Fraction(list):
     """
     A real-valued fraction.
 
-    Consists of a single dict from prime factors(int),
-    to their powers, which are RationalFrac objects.
+    A list of MonoFrac objects.
 
     Special cases: When zero, self.has_key(0) is True.
                    When undef, self[0].neg is True.
@@ -20,6 +19,7 @@ class Fraction(dict):
     neg = False
 
     def __init__(self, number):
+        # TODO: Refactor for new format with MonoFrac.
         """
         Must be initialized with a rational fraction
         or another Fraction object.
@@ -27,7 +27,7 @@ class Fraction(dict):
         # Copy construction:
         if isinstance(number, Fraction):
             self.neg = bool(number.neg)
-            super().__init__(number)
+            super(Fraction, self).__init__(number)
 
         # Construction with a rational-valued
         elif isinstance(number, (RF, int, float)):
@@ -38,13 +38,12 @@ class Fraction(dict):
                 factors[fac] = RF(rf.numer.count(fac))
             for fac in rf.denom:
                 factors[fac] = RF(rf.denom.count(fac).__neg__())
-            super().__init__(factors)
+            super(Fraction, self).__init__(factors)
 
         # Unexpected argument type:
         else:
             raise TypeError(
-                str(number) + 'invalid. \n' +
-                'must initialize with one of: \n' +
+                str(number) + ' invalid. must initialize with one of:\n'
                 'Fraction, RationalFrac, int, float.')
 
     """
@@ -136,15 +135,14 @@ class Fraction(dict):
 
 def fraction_tests():
     """ Some small test cases for the Fraction class. """
-    print('\n==========================================')
-    print('rfrac.py @ fraction_tests: ////////////\n')
+    print('\n==========================================\n'
+          'rfrac.py @ fraction_tests: ///////////////\n')
     d0 = {0: 'hi'}
     d1 = dict(d0)
     d1[0] = 'hello'
-    d1.get(0) =
     print(d0[0], d1[0])
-    print('\nrfrac.py @ end of fraction_tests //////')
-    print('==========================================\n')
+    print('\nrfrac.py @ end of fraction_tests /////////\n'
+          '==========================================\n')
 
 
 if __name__ == '__main__':

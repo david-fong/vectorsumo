@@ -59,7 +59,7 @@ class RationalFrac:
     one for the numerator, and one for the denominator.
     Each operation preserves that the fraction is simplified.
 
-    Special cases: When an integer, self.denom = [].
+    Special cases: self.denom = [] for denominator value = 1.
     """
     numer: [int, ] = []
     denom: [int, ] = []  # empty if denominator is 1
@@ -154,6 +154,15 @@ class RationalFrac:
             self.denom = []
             raise AssertionError('there was a 1 in denom D:<')
 
+    def numer_prod(self) -> int:
+        return reduce(mul, self.numer, 1)
+
+    def denom_prod(self) -> int:
+        if len(self.denom) == 0:
+            return 1
+        else:
+            return reduce(mul, self.denom, 1)
+
     """
     Public-use, representation/observer methods:
     """
@@ -189,25 +198,9 @@ class RationalFrac:
                             self.denom_prod())
         return s
 
-    def numer_prod(self) -> int:
-        return reduce(mul, self.numer, 1)
-
-    def denom_prod(self) -> int:
-        if len(self.denom) == 0:
-            return 1
-        else:
-            return reduce(mul, self.denom, 1)
-
     """
     Negation, Addition, and Subtraction:
     """
-    def __neg__(self):
-        negated = RationalFrac(0, empty=True)
-        negated.numer = self.numer.copy()
-        negated.denom = self.denom.copy()
-        negated.neg = not self.neg  # TODO: if (0 in self.numer) else False
-        return negated
-
     def __add__(self, other):
         """Returns the sum of this fraction and other."""
         if isinstance(other, RationalFrac):
@@ -274,6 +267,13 @@ class RationalFrac:
         recip.denom = [] if 1 in self.numer else self.numer.copy()
         recip.neg = bool(self.neg)
         return recip
+
+    def __neg__(self):
+        negated = RationalFrac(0, empty=True)
+        negated.numer = self.numer.copy()
+        negated.denom = self.denom.copy()
+        negated.neg = not self.neg  # TODO: if (0 in self.numer) else False
+        return negated
 
     def __mul__(self, other):
         """ Returns the product of this and another fraction. """
