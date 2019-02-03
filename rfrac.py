@@ -100,9 +100,9 @@ class RationalFrac:
                 # numer = int(str(numer).split('.')[1])
 
                 # TODO: this is an experimental 'give-up':
-                if exp >= 100:
+                if exp >= 50:  # <- decimal places
                     raise ValueError(
-                        'hmm. looks like making this a ' +
+                        'hmm. looks like making this into a ' +
                         'fraction might be messy...')
                 numer = int(round(numer * 10 ** exp))
                 self.numer = factorize(numer)
@@ -202,11 +202,11 @@ class RationalFrac:
     Negation, Addition, and Subtraction:
     """
     def __neg__(self):
-        neg = RationalFrac(0, empty=True)
-        neg.numer = self.numer.copy()
-        neg.denom = self.denom.copy()
-        neg.neg = not self.neg  # TODO: if (0 in self.numer) else False
-        return neg
+        negated = RationalFrac(0, empty=True)
+        negated.numer = self.numer.copy()
+        negated.denom = self.denom.copy()
+        negated.neg = not self.neg  # TODO: if (0 in self.numer) else False
+        return negated
 
     def __add__(self, other):
         """Returns the sum of this fraction and other."""
@@ -314,27 +314,40 @@ class RationalFrac:
         """ Returns the quotient of this and another fraction. """
         if isinstance(other, RationalFrac):
             return self.__mul__(other.reciprocal())
+
         elif isinstance(other, (int, float)):
             f_other = RationalFrac(other)
             return self.__mul__(f_other.reciprocal())
         else:
             return NotImplemented
 
-    def __pow__(self, power: int, modulo=None):
+    def __pow__(self, power, modulo=None):
         """ Returns this fraction to the specified power. """
-        assert isinstance(power, int)
-        if power == 0:
-            return RationalFrac(1)
-        elif power < 0:
-            fexp = self.reciprocal()
-            power = abs(power)
-        else:
-            fexp = RationalFrac(self)
+        if isinstance(power, RationalFrac):
+            assert len(power.denom) == 0, 'expected integer-valued power'
+            return self.__pow__(power.__int__())
 
-        fexp.numer *= power
-        fexp.denom *= power
-        fexp.neg = (power % 2 == 1) if self.neg else False
-        return fexp
+        elif isinstance(power, int):
+            assert isinstance(power, int)
+            if power == 0:
+                return RationalFrac(1)
+            elif power < 0:
+                fexp = self.reciprocal()
+                power = abs(power)
+            else:
+                fexp = RationalFrac(self)
+
+            fexp.numer *= power
+            fexp.denom *= power
+            fexp.neg = (power % 2 == 1) if self.neg else False
+            return fexp
+
+        else:
+            return NotImplemented
+
+    def __rpow__(self, other):
+        """ Returns other ** self. """
+        pass  # TODO: reconcile this with Fraction addition.
 
     """
     Rich comparison methods:
