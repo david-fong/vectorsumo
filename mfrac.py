@@ -243,7 +243,7 @@ class MonoFrac:
 
     def __rmul__(self, other):
         """ Returns the product of this and a number. """
-        pass  # TODO:
+        return self.__mul__(other)
 
     def __truediv__(self, other):
         """ Returns the quotient of this and another fraction. """
