@@ -107,10 +107,14 @@ class MonoFrac:
         return int(self.__float__())
 
     def __str__(self):
-        pass
+        s = str(self.rational)
+        s += '*' + str(self.irr)
+        return f'({s})'
 
     def __repr__(self):
-        pass
+        s = str(self.rational)
+        s += '*' + str(self.irr)
+        return f'({s})'
 
     def irr_numer(self):
         """
@@ -270,34 +274,41 @@ class MonoFrac:
         else:
             return NotImplemented
 
-    def __pow__(self, power, modulo=None):
+    def __pow__(self, exp, modulo=None):
         """ Returns this fraction to the specified power. """
         # If power is an int:
-        if isinstance(power, int):
+        if isinstance(exp, int):
             power = self.__copy__()
             power.rational **= power
 
         # If power is a RationalFrac:
-        elif isinstance(power, (RF, float)):
+        elif isinstance(exp, (RF, float)):
             power = MonoFrac(1)
+            power.irr = self.irr.copy()
             # Move rational numerator to irrational dict:
             for fac in self.rational.numer:
-                if fac in self.irr:
+                try:
                     power.irr[fac] += 1
-                else:
-                    power.irr[fac] = 1
+                except KeyError:
+                    power.irr[fac] = RF(1)
             # Move rational denominator to irrational dict:
             for fac in self.rational.denom:
-                if fac in self.irr:
-                    power.irr[fac] += 1
-                else:
-                    power.irr[fac] = -1
+                try:
+                    power.irr[fac] -= 1
+                except KeyError:
+                    power.irr[fac] = RF(-1)
+
+        # If power is MonoFrac:
+        elif isinstance(exp, MonoFrac):
+            pass  # TODO: D:< do I want to make the design decision
+            #        to make the irrational part recursive?
+            return  # Remove this when decision is made.
         else:
             return NotImplemented
 
         # Use mathematical power rules on irrational part:
         for fac in power.irr.keys():
-            power.irr[fac] *= power
+            power.irr[fac] *= exp
         power.simplify()
         return power
 
@@ -344,13 +355,12 @@ def mono_fraction_tests():
     """ Some small test cases for the MonoFrac class. """
     print('\n==========================================\n'
           'mfrac.py @ mono_fraction_tests: //////////\n')
-    d0 = {0: 'hi', 1: 'how are you', 2: 'bye'}
-    print(list(filter(lambda key: len(d0[key]) < 5, d0)))
-    d1 = d0.copy()
-    d1[0] = 'hello'
-    for k, v in d0.items():
-        d0[k] = 'hiya'
-    print(d0[0], d1[0])
+    f = [MonoFrac(0), MonoFrac(1),
+         MonoFrac(0.5), MonoFrac(2),
+         MonoFrac(0.125), MonoFrac(8)]
+    print(f)
+    f2 = [m ** 0.5 for m in f]
+    print(f2)
     print('\nmfrac.py @ end of mono_fraction_tests ////\n'
           '==========================================\n')
 
