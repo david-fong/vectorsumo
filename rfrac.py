@@ -362,34 +362,16 @@ class RationalFrac:
     """
     Modulus and powers:
     """
-    def __mod__(self, other):
-        """ Returns the remainder of floor division by other. """
-        if isinstance(other, RationalFrac):
-            # Get denominator factors not shared
-            # for self and other respectively:
-            diff_self = self.denom.copy()
-            diff_other = other.denom.copy()
-            for factor in self.denom:
-                if factor in diff_self and factor in diff_other:
-                    diff_self.remove(factor)
-                    diff_other.remove(factor)
-
-            # Calculate the new numerator:
-            numer_self = RationalFrac.rf_prod(self.numer + diff_other)
-            numer_other = RationalFrac.rf_prod(other.numer + diff_self)
-            if self.neg:
-                numer_self *= -1
-            if other.neg:
-                numer_other *= -1
-            numer = numer_self % numer_other
-
-            # Create the new fraction:
-            fsum = RationalFrac(0, empty=True)
-            fsum.numer = RationalFrac.factorize(abs(numer))
-            fsum.denom = self.denom + diff_other
-            fsum.neg = numer < 0
-            fsum.simplify()
-            return fsum
+    def mixed(self):
+        """
+        Removes the whole-number part of
+        this fraction and returns it.
+        """
+        numer = self.numer_prod()
+        denom = self.denom_prod()
+        self.numer = RationalFrac.factorize(numer % denom)
+        self.simplify()
+        return numer // denom
 
     def __pow__(self, power, modulo=None):
         """
