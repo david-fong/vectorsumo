@@ -34,10 +34,16 @@ class MonoFrac:
     rational: rfrac.RationalFrac
     irr: dict = {}
 
-    def __init__(self, number):
+    def __init__(self, number, irr: dict = None):
         """
         Must be initialized with a rational valued
         fraction or another MonoFrac object.
+
+        IMPORTANT:
+        If dict is present and number is of type
+        (RationalFrac, int, float), then it is
+        assumed to be of type {int: RationalFrac, }
+        and is copied by reference into self.irr.
         """
         # Copy construction:
         if isinstance(number, MonoFrac):
@@ -45,8 +51,10 @@ class MonoFrac:
             self.irr = number.irr.copy()
 
         # Construct with rational fraction or number:
-        elif isinstance(number, (RF, int, float)):
+        elif isinstance(number, (RF, int, float, str)):
             self.rational = RF(number)
+            if irr is not None:
+                self.irr = irr
 
         # Unexpected arguments:
         else:
@@ -63,6 +71,10 @@ class MonoFrac:
         return copy
 
     def simplify(self):
+        """
+        Used to maintain that values (representing exponents)
+        in irr are in the range (-1, 1) and not zero.
+        """
         for fac, exp in self.irr.items():
             # fac ** 0 == 1. Remove redundant mapping:
             if 0 in exp.numer:
@@ -89,14 +101,14 @@ class MonoFrac:
         MonoFrac object can be added with other.
 
         Returns whether the irrational parts of
-        self and other are the same.
+        self and other are the same (bool).
         """
         if isinstance(other, MonoFrac):
             return self.irr == other.irr
 
         # If other has no irrational part:
         elif isinstance(other, (RF, int, float)):
-            return len(self.irr) == 0
+            return not self.irr  # len(self.irr) == 0
         else:
             raise TypeError(
                 'can only compare degrees with '
@@ -109,14 +121,15 @@ class MonoFrac:
         return int(self.__float__())
 
     def __str__(self):
-        s = [str(self.rational), ] if self.rational != 1 else []
-        s.extend([f'{fac}^({str(exp)})' for fac, exp in self.irr.items()])
+        s = [] if self.rational == 1 and self.irr else [f'({self.rational})', ]
+        s.extend([f'{fac}^({exp})' for fac, exp in self.irr.items()])
         s = '*'.join(s)
-        return f'({s})'
+        return s
 
     def __repr__(self):
-        s = repr(self.rational)
-        s += '*' + str(self.irr)
+        s = [f'({repr(self.rational)})', ]
+        s.extend([f'{fac}^({repr(exp)})' for fac, exp in self.irr.items()])
+        s = '*'.join(s)
         return f'({s})'
 
     def irr_numer(self):

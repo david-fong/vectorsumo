@@ -73,6 +73,11 @@ class RationalFrac:
                 raise ZeroDivisionError(
                     'should not initialize with a denominator of zero.')
 
+        # If initialized with a string version of a fraction:
+        elif isinstance(numer, str):
+            split = numer.split('/')
+            self.__init__(int(split[0]), int(split[1]))
+
         # Unexpected argument as initialization value:
         else:
             raise TypeError(
@@ -137,6 +142,8 @@ class RationalFrac:
 
     def simplify(self):
         """
+        Used to maintain that numer and
+        denom have no common factors.
         Assumes that numer and denom
         are lists of prime numbers.
         """
@@ -178,8 +185,8 @@ class RationalFrac:
         else:
             return int(self.__float__())
 
-    def __str__(self) -> str:
-        s = '-' if self.neg else ' '
+    def __str__(self, fmt='') -> str:
+        s = '-' if self.neg else ' ' if ' ' in fmt else ''
         if 0 in self.numer:
             s += '0'
         elif 0 in self.denom:
@@ -435,6 +442,8 @@ def rational_frac_tests():
     print(f)
     print('frac(-0/1) + frac(-0/1) =',
           RationalFrac(-0) + RationalFrac(-0))
+    f3 = RationalFrac('-7/29')
+    print(f3)
     print('\nrfrac.py @ end of rational_frac_tests ////')
     print('==========================================\n')
 

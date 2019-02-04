@@ -2,11 +2,9 @@ from math import ceil, pi, cos, sin, sqrt
 
 import matrix
 import rfrac
-import mfrac
 
 
 RF = rfrac.RationalFrac
-MF = mfrac.MonoFrac
 
 
 class Vector(list):

@@ -40,18 +40,11 @@ class Matrix(list):
         contents = []
         for vec in self:
             contents.extend(vec)
-        width = max(map(lambda frac: len(str(frac)), contents))
-        if all(map(lambda frac: str(frac).startswith(' '), contents)):
-            for row in self:
-                rs = ', '.join(map(
-                    lambda f: f.__str__().lstrip()
-                               .center(width - 1), row))
-                s += '[%s]\n' % rs
-        else:
-            for row in self:
-                rs = ', '.join(map(
-                    lambda f: f.__str__().center(width), row))
-                s += '[%s]\n' % rs
+        width = max(map(lambda frac: len(frac.__str__(' ')), contents))
+        for row in self:
+            rs = ', '.join(map(
+                lambda f: f.__str__(' ').center(width), row))
+            s += '[%s]\n' % rs
         return s
 
     def is_square(self):

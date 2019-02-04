@@ -13,17 +13,16 @@ class Fraction(list):
     """
 
     def __init__(self, number):
-        # TODO: Refactor for new format with MonoFrac.
         """
-        Must be initialized with a rational fraction
-        or another Fraction object.
+        If initialized with a list, assumes the list
+        contains only MonoFrac type objects.
         """
         # Copy construction:
-        if isinstance(number, Fraction):
+        if isinstance(number, (Fraction, list)):
             self.neg = bool(number.neg)
             super(Fraction, self).__init__(number)
 
-        # Construction with a rational-valued
+        # Construction with a rational-valued fraction:
         elif isinstance(number, (RF, int, float)):
             super(Fraction, self).__init__([RF(number), ])
 
@@ -34,7 +33,15 @@ class Fraction(list):
                 'Fraction, RationalFrac, int, float.')
 
     def simplify(self):
-        pass
+        """ Used to merge MonoFrac items with common irr fields. """
+        common_irr = dict.fromkeys(
+            map(lambda mono: mono.irr, self), MF(0)
+        )
+        for mf in self:
+            common_irr[mf.irr] += mf.rational
+        self.clear()
+        for irr, rational in common_irr:
+            self.append(MF(rational, irr))
 
     """
     Public-use, representation/observer methods:
@@ -43,10 +50,10 @@ class Fraction(list):
         return sum(map(MF.__float__, self))
 
     def __int__(self):
-        pass
+        return int(float(self))
 
     def __str__(self):
-        pass
+        return '+'.join(map(lambda mf: mf.__str__(), self))
 
     def __repr__(self):
         pass
@@ -55,12 +62,12 @@ class Fraction(list):
     Negation, Addition, and Subtraction:
     """
     def __neg__(self):
-        negated = self.copy()
-        negated.neg = not self.neg
-        return negated
+        return Fraction([mf.__neg__() for mf in self])
 
     def __add__(self, other):
-        pass
+        fsum = Fraction(super(Fraction, self).__add__(other))
+        fsum.simplify()
+        return fsum
 
     def __radd__(self, other):
         pass
@@ -100,10 +107,7 @@ def fraction_tests():
     """ Some small test cases for the Fraction class. """
     print('\n==========================================\n'
           'rfrac.py @ fraction_tests: ///////////////\n')
-    d0 = {0: 'hi'}
-    d1 = dict(d0)
-    d1[0] = 'hello'
-    print(d0[0], d1[0])
+    f0 = Fraction()
     print('\nrfrac.py @ end of fraction_tests /////////\n'
           '==========================================\n')
 
