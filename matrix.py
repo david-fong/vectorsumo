@@ -2,7 +2,7 @@ from functools import reduce
 from numbers import Number
 
 import rfrac
-from vector import Vector
+import vector
 
 RF = rfrac.RationalFrac
 
@@ -33,7 +33,7 @@ class Matrix(list):
         """
         self.nrows = len(rows)
         self.ncols = len(rows[0])
-        super().__init__([Vector(row) for row in rows])
+        super().__init__([vector.Vector(row) for row in rows])
 
     def __str__(self):
         s = ''
@@ -201,10 +201,10 @@ class Matrix(list):
             return Matrix(prod)
 
         # Matrix multiplied by a vector:
-        elif isinstance(other, Vector):
+        elif isinstance(other, vector.Vector):
             if self.ncols != len(other):
                 raise MatrixSizeError('op1 #cols != op2 length')
-            return Vector([
+            return vector.Vector([
                 sum(self[r].dot(other))
                 for r in range(self.nrows)
             ])
@@ -271,7 +271,7 @@ def matrix_tests():
     print('matrix.py @ matrix_tests: ////////////////\n')
     frac1 = RF(0.125)
     # print(frac1)
-    vec1 = Vector([0, 0.5, 2])
+    vec1 = vector.Vector([0, 0.5, 2])
     mtx1 = Matrix([[0, 4.5],  # [0, 11]
                    [2, 3]])  # [2,  3]
     RF(-0)

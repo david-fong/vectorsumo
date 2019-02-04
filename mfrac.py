@@ -67,16 +67,17 @@ class MonoFrac:
             # fac ** 0 == 1. Remove redundant mapping:
             if 0 in exp.numer:
                 del self.irr[fac]
+                continue
 
             # Factor out any rational parts
             # of self.irr to self.rational:
             # (Ie. denominator is 1 -> empty primes list)
-            elif not exp.denom:
-                factor_out = [fac, ] * exp.numer_prod()
-                if exp.neg:
-                    self.rational.denom.extend(factor_out)
-                else:
-                    self.rational.numer.extend(factor_out)
+            factor_out = [fac, ] * exp.mixed()
+            if exp.neg:
+                self.rational.denom.extend(factor_out)
+            else:
+                self.rational.numer.extend(factor_out)
+            if not exp.denom:
                 del self.irr[fac]
 
     """
@@ -108,8 +109,8 @@ class MonoFrac:
         return int(self.__float__())
 
     def __str__(self):
-        s = [str(self.rational), ] + [
-            f'{fac}^({str(exp)})' for fac, exp in self.irr]
+        s = [str(self.rational), ] if self.rational != 1 else []
+        s.extend([f'{fac}^({str(exp)})' for fac, exp in self.irr.items()])
         s = '*'.join(s)
         return f'({s})'
 
@@ -287,6 +288,12 @@ class MonoFrac:
         elif isinstance(exp, (RF, float)):
             power = MonoFrac(1)
             power.irr = self.irr.copy()
+            # Check if self is zero:
+            if 0 in self.rational.numer:
+                if exp < 0:
+                    raise ZeroDivisionError
+                else:
+                    return MonoFrac(0)
             # Move rational numerator to irrational dict:
             for fac in self.rational.numer:
                 try:
@@ -302,7 +309,7 @@ class MonoFrac:
 
         # If power is MonoFrac:
         elif isinstance(exp, MonoFrac):
-            pass  # TODO: D:< do I want to make the design decision
+            pass  # TODO: Do I want to make the design decision
             #        to make the irrational part recursive?
             return  # Remove this when decision is made.
         else:
@@ -363,6 +370,7 @@ def mono_fraction_tests():
     print(f)
     f2 = [m ** 0.5 for m in f]
     print(f2)
+    print(list(map(str, f2)))
     print('\nmfrac.py @ end of mono_fraction_tests ////\n'
           '==========================================\n')
 

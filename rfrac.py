@@ -370,7 +370,6 @@ class RationalFrac:
         numer = self.numer_prod()
         denom = self.denom_prod()
         self.numer = RationalFrac.factorize(numer % denom)
-        self.simplify()
         return numer // denom
 
     def __pow__(self, power, modulo=None):
