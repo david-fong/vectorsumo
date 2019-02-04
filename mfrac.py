@@ -70,12 +70,13 @@ class MonoFrac:
 
             # Factor out any rational parts
             # of self.irr to self.rational:
-            elif len(exp.denom) is 0:
-                rational = [fac, ] * exp.numer_prod()
+            # (Ie. denominator is 1 -> empty primes list)
+            elif not exp.denom:
+                factor_out = [fac, ] * exp.numer_prod()
                 if exp.neg:
-                    self.rational.denom.extend(rational)
+                    self.rational.denom.extend(factor_out)
                 else:
-                    self.rational.numer.extend(rational)
+                    self.rational.numer.extend(factor_out)
                 del self.irr[fac]
 
     """
@@ -107,12 +108,13 @@ class MonoFrac:
         return int(self.__float__())
 
     def __str__(self):
-        s = str(self.rational)
-        s += '*' + str(self.irr)
+        s = [str(self.rational), ] + [
+            f'{fac}^({str(exp)})' for fac, exp in self.irr]
+        s = '*'.join(s)
         return f'({s})'
 
     def __repr__(self):
-        s = str(self.rational)
+        s = repr(self.rational)
         s += '*' + str(self.irr)
         return f'({s})'
 
@@ -342,7 +344,7 @@ class MonoFrac:
         denom = reduce(mul, map(
             lambda f, ex: f ** exp.numer_prod(),
             self.irr_denom()))
-        mixed = rfrac.factorize(numer // denom)
+        mixed = RF.factorize(numer // denom)
         numer = numer % denom
         roots = {}
         for factor in set(mixed):

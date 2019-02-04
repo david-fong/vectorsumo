@@ -3,42 +3,6 @@ from functools import reduce
 from operator import mul
 
 
-def factorize(num: int, denom: bool = False) -> [int, ]:
-    """
-    Takes a positive integer and returns a
-    list of its prime factors excluding 1
-    (unless the number is 1).
-    """
-    # assert isinstance(num, int)
-    primes = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
-              31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
-              73, 79, 83, 89, 97, 101, 103, 107, 109, 113,
-              127, 131, 137, 139, 149, 151, 157, 163, 167, 173,
-              179, 181, 191, 193, 197, 199, 211, 223, 227, 229,
-              233, 239, 241, 251, 257, 263, 269, 271, 277, 281,
-              283, 293, 307, 311, 313, 317, 331, 337, 347, 349,
-              353, 359, 367, 373, 379, 383, 389, 397, 401, 409,
-              419, 421, 431, 433, 439, 443, 449, 457, 461, 463,
-              467, 479, 487, 491, 499, 503, 509, 521, 523, 541)
-    factors = []
-    if num == 0:
-        return [0, ]
-    if num == 1 and not denom:
-        return [1, ]
-    for prime in primes:
-        if prime > num:
-            break
-        while num % prime == 0:
-            factors.append(prime)
-            num = int(round(num / prime))
-    if num != 1 and num != 0:
-        # TODO: make it find larger primes to avoid this problem.
-        print('num is:', num)
-        raise ArithmeticError(
-            'did not finish prime factorization.')
-    return factors
-
-
 def __prime_factors(start=2):
     factors = [2]
     num = start
@@ -61,7 +25,7 @@ class RationalFrac:
 
     Special cases: self.denom = [] for denominator value = 1.
     """
-    numer: [int, ] = []
+    numer: [int, ] = []  # empty if numerator is 1
     denom: [int, ] = []  # empty if denominator is 1
     neg: bool = False
 
@@ -89,7 +53,7 @@ class RationalFrac:
 
         if numer == 0:
             self.numer = [0, ]
-            self.denom = []
+            return
 
         # If initialized with a float:
         elif isinstance(numer, float):
@@ -99,29 +63,24 @@ class RationalFrac:
             exp = len(str(numer).split('.')[1])
             # numer = int(str(numer).split('.')[1])
 
-            # TODO: this is an experimental 'give-up':
-            if exp >= 50:  # <- decimal places
-                raise ValueError(
-                    'hmm. looks like making this into a ' +
-                    'fraction might be messy...')
             numer = int(round(numer * 10 ** exp))
-            self.numer = factorize(numer)
+            self.numer = RationalFrac.factorize(numer)
             self.denom = [2, 5] * exp
 
         # If initialized with a numerator and denominator:
         elif isinstance(numer, int) and isinstance(denom, int):
+            self.numer = RationalFrac.factorize(abs(numer))
+            self.denom = RationalFrac.factorize(abs(denom))
             self.neg = not ((numer < 0) == (denom < 0))
-            self.numer = factorize(abs(numer))
             if denom == 0:
                 raise ZeroDivisionError(
-                    'cannot initialize with a denominator of zero.')
-            self.denom = factorize(abs(denom), denom=True)
+                    'should not initialize with a denominator of zero.')
 
         # Unexpected argument as initialization value:
         else:
             raise TypeError(
-                'could not create a rational ' +
-                'fraction with given parameters')
+                'could not create a rational '
+                'fraction with the given parameters')
 
         # If successful, cleanup:
         self.simplify()
@@ -133,6 +92,51 @@ class RationalFrac:
         copy.denom = self.denom.copy()
         copy.neg = bool(self.neg)
         return copy
+
+    @staticmethod
+    def factorize(num: int) -> [int, ]:
+        """
+        Takes a positive integer and returns a
+        list of its prime factors excluding 1
+        (unless the number is 1).
+        """
+        # assert isinstance(num, int)
+        primes = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
+                  31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+                  73, 79, 83, 89, 97, 101, 103, 107, 109, 113,
+                  127, 131, 137, 139, 149, 151, 157, 163, 167, 173,
+                  179, 181, 191, 193, 197, 199, 211, 223, 227, 229,
+                  233, 239, 241, 251, 257, 263, 269, 271, 277, 281,
+                  283, 293, 307, 311, 313, 317, 331, 337, 347, 349,
+                  353, 359, 367, 373, 379, 383, 389, 397, 401, 409,
+                  419, 421, 431, 433, 439, 443, 449, 457, 461, 463,
+                  467, 479, 487, 491, 499, 503, 509, 521, 523, 541)
+        factors = []
+        if num == 0:
+            return [0, ]
+
+        # Generate a list of prime factors:
+        for prime in primes:
+            if prime > num:
+                break
+            while num % prime == 0:
+                factors.append(prime)
+                num = int(round(num / prime))
+        if num != 1:
+            # TODO: make it find larger primes to avoid this problem.
+            raise ArithmeticError(
+                f'num is {num}. did not finish prime factorization.')
+        return factors
+
+    @staticmethod
+    def rf_prod(prime_factors: [int, ]):
+        """
+        Returns the product of a list of prime factors.
+        assumes the only prime factors is one if and only
+        if the list of primes is empty. Returns 0 if it
+        exists in the list of primes.
+        """
+        return 1 if not prime_factors else reduce(mul, prime_factors, 1)
 
     def simplify(self):
         """
@@ -157,21 +161,19 @@ class RationalFrac:
 
         # If numer was denom, or some operations
         # resulted in multiple ones in numer:
-        self.numer = list(filter(lambda fac: fac != 1, self.numer))
-        if len(self.numer) == 0:
-            self.numer = [1, ]
+        # TODO: remove these once tests and fixes confirm they never happen.
+        if 1 in self.numer:
+            self.denom = []
+            raise AssertionError('there was a 1 in numer D:<')
         if 1 in self.denom:
             self.denom = []
             raise AssertionError('there was a 1 in denom D:<')
 
     def numer_prod(self) -> int:
-        return reduce(mul, self.numer, 1)
+        return RationalFrac.rf_prod(self.numer)
 
     def denom_prod(self) -> int:
-        if len(self.denom) == 0:
-            return 1
-        else:
-            return reduce(mul, self.denom, 1)
+        return RationalFrac.rf_prod(self.denom)
 
     """
     Public-use, representation/observer methods:
@@ -183,7 +185,12 @@ class RationalFrac:
 
     def __int__(self) -> int:
         """Public method to get the int value of this fraction."""
-        return int(self.__float__())
+        # If denominator is 1:
+        if self.denom:
+            return (-self.numer_prod() if self.neg
+                    else self.numer_prod())
+        else:
+            return int(self.__float__())
 
     def __str__(self) -> str:
         s = '-' if self.neg else ' '
@@ -193,11 +200,15 @@ class RationalFrac:
             s += 'undef'
         else:
             s += '%d' % self.numer_prod()
-            if len(self.denom) != 0:
+            if self.denom:
                 s += '/%d' % self.denom_prod()
         return s
 
     def __repr__(self) -> str:
+        """
+        Same as __str__, but always prints
+        the sign and the denominator.
+        """
         s = '-' if self.neg else '+'
         if 0 in self.numer:
             s += '0'
@@ -229,8 +240,8 @@ class RationalFrac:
                     diff_other.remove(factor)
 
             # Calculate the new numerator:
-            numer_self: int = reduce(mul, self.numer + diff_other)
-            numer_other: int = reduce(mul, other.numer + diff_self)
+            numer_self = RationalFrac.rf_prod(self.numer + diff_other)
+            numer_other = RationalFrac.rf_prod(other.numer + diff_self)
             if self.neg:
                 numer_self *= -1
             if other.neg:
@@ -239,7 +250,7 @@ class RationalFrac:
 
             # Create the new fraction:
             fsum = RationalFrac(0, empty=True)
-            fsum.numer = factorize(abs(numer))
+            fsum.numer = RationalFrac.factorize(abs(numer))
             fsum.denom = self.denom + diff_other
             fsum.neg = numer < 0
             fsum.simplify()
@@ -261,7 +272,7 @@ class RationalFrac:
         return self.__add__(other.__neg__())
 
     """
-    Multiplication, Division, and Exponents:
+    Multiplication, Division:
     """
     def reciprocal(self):
         """
@@ -273,8 +284,8 @@ class RationalFrac:
         recip = RationalFrac(0, empty=True)
         if 0 in self.numer:
             raise ZeroDivisionError('the reciprocal of zero is undefined.')
-        recip.numer = [1, ] if len(self.denom) == 0 else self.denom.copy()
-        recip.denom = [] if 1 in self.numer else self.numer.copy()
+        recip.numer = self.denom.copy()
+        recip.denom = self.numer.copy()
         recip.neg = bool(self.neg)
         return recip
 
@@ -348,6 +359,38 @@ class RationalFrac:
         else:
             return NotImplemented
 
+    """
+    Modulus and powers:
+    """
+    def __mod__(self, other):
+        """ Returns the remainder of floor division by other. """
+        if isinstance(other, RationalFrac):
+            # Get denominator factors not shared
+            # for self and other respectively:
+            diff_self = self.denom.copy()
+            diff_other = other.denom.copy()
+            for factor in self.denom:
+                if factor in diff_self and factor in diff_other:
+                    diff_self.remove(factor)
+                    diff_other.remove(factor)
+
+            # Calculate the new numerator:
+            numer_self = RationalFrac.rf_prod(self.numer + diff_other)
+            numer_other = RationalFrac.rf_prod(other.numer + diff_self)
+            if self.neg:
+                numer_self *= -1
+            if other.neg:
+                numer_other *= -1
+            numer = numer_self % numer_other
+
+            # Create the new fraction:
+            fsum = RationalFrac(0, empty=True)
+            fsum.numer = RationalFrac.factorize(abs(numer))
+            fsum.denom = self.denom + diff_other
+            fsum.neg = numer < 0
+            fsum.simplify()
+            return fsum
+
     def __pow__(self, power, modulo=None):
         """
         Returns this fraction to the specified power.
@@ -368,14 +411,17 @@ class RationalFrac:
             return fexp
 
         elif isinstance(power, RationalFrac):
-            assert len(power.denom) == 0, 'expected integer-valued power'
+            assert not power.denom, 'expected integer-valued power'
             return self.__pow__(int(power))
         else:
             return NotImplemented
 
     def __rpow__(self, other):
-        """ Returns other ** self. """
-        pass  # TODO: reconcile this with Fraction addition.
+        """
+        Returns other ** self.
+        The return type is MonoFrac.
+        """
+        pass  # TODO: implement this.
 
     """
     Rich comparison methods:
