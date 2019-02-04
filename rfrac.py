@@ -1,4 +1,3 @@
-import inspect
 from functools import reduce
 from operator import mul
 
@@ -44,8 +43,6 @@ class RationalFrac:
 
         # If copy constructing another Fraction:
         if isinstance(numer, RationalFrac):
-            print(inspect.stack()[1][1:],
-                  'do we need to do this?')
             self.numer = numer.numer
             self.denom = numer.denom
             self.neg = numer.neg
@@ -146,9 +143,8 @@ class RationalFrac:
         if 0 in self.numer:
             self.numer = [0, ]
             self.denom = []
-            # TODO: self.neg = False
+            self.neg = False
             return
-
         # Eliminate common factors:
         for factor in set(self.numer):
             # number of shared occurrences:
@@ -158,16 +154,6 @@ class RationalFrac:
             for i in range(count):
                 self.numer.remove(factor)
                 self.denom.remove(factor)
-
-        # If numer was denom, or some operations
-        # resulted in multiple ones in numer:
-        # TODO: remove these once tests and fixes confirm they never happen.
-        if 1 in self.numer:
-            self.denom = []
-            raise AssertionError('there was a 1 in numer D:<')
-        if 1 in self.denom:
-            self.denom = []
-            raise AssertionError('there was a 1 in denom D:<')
 
     def numer_prod(self) -> int:
         return RationalFrac.rf_prod(self.numer)
@@ -291,7 +277,7 @@ class RationalFrac:
 
     def __neg__(self):
         negated = self.__copy__()
-        negated.neg = not self.neg  # TODO: if (0 in self.numer) else False
+        negated.neg = not self.neg if (0 in self.numer) else False
         return negated
 
     def __mul__(self, other):

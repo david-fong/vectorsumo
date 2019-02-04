@@ -2,9 +2,11 @@ from math import ceil, pi, cos, sin, sqrt
 
 import matrix
 import rfrac
+import mfrac
 
 
 RF = rfrac.RationalFrac
+MF = mfrac.MonoFrac
 
 
 class Vector(list):
@@ -109,7 +111,7 @@ class Vector(list):
         o %= 2 * pi
         return Vector.rot_matrix(0, len(self), axis) @ self
 
-    def transform(self) -> matrix.Matrix:
+    def transform(self):
         """Return a [1 x len(self)] matrix"""
         return matrix.Matrix(self)
 
@@ -185,3 +187,18 @@ class Vector(list):
                 lambda i: self[i].__eq__(other[i]),
                 list(range(len(self)))
             ))
+
+
+def vector_tests():
+    print('\n==========================================\n'
+          'vector.py @ vector_tests: ////////////////\n')
+    vec1 = Vector([0, 0.5, 2])
+    print(vec1)
+    print(vec1 * vec1)
+    print([0, 1, RF(5, 7)] + vec1)
+    print('\nvector.py @ end of vector_tests //////////\n'
+          '==========================================\n')
+
+
+if __name__ == '__main__':
+    vector_tests()

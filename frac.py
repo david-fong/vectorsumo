@@ -1,10 +1,8 @@
-from functools import reduce
-from operator import mul
-
 import rfrac
-
+import mfrac
 
 RF = rfrac.RationalFrac
+MF = mfrac.MonoFrac
 
 
 class Fraction(list):
@@ -12,11 +10,7 @@ class Fraction(list):
     A real-valued fraction.
 
     A list of MonoFrac objects.
-
-    Special cases: When zero, self.has_key(0) is True.
-                   When undef, self[0].neg is True.
     """
-    neg = False
 
     def __init__(self, number):
         # TODO: Refactor for new format with MonoFrac.
@@ -31,14 +25,7 @@ class Fraction(list):
 
         # Construction with a rational-valued
         elif isinstance(number, (RF, int, float)):
-            rf = RF(number)
-            self.neg = bool(rf.neg)
-            factors: dict = {}
-            for fac in rf.numer:
-                factors[fac] = RF(rf.numer.count(fac))
-            for fac in rf.denom:
-                factors[fac] = RF(rf.denom.count(fac).__neg__())
-            super(Fraction, self).__init__(factors)
+            super(Fraction, self).__init__([RF(number), ])
 
         # Unexpected argument type:
         else:
@@ -46,11 +33,14 @@ class Fraction(list):
                 str(number) + ' invalid. must initialize with one of:\n'
                 'Fraction, RationalFrac, int, float.')
 
+    def simplify(self):
+        pass
+
     """
     Public-use, representation/observer methods:
     """
     def __float__(self):
-        pass
+        return sum(map(MF.__float__, self))
 
     def __int__(self):
         pass
