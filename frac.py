@@ -14,34 +14,44 @@ class Fraction(list):
 
     def __init__(self, number):
         """
-        If initialized with a list, assumes the list
-        contains only MonoFrac type objects.
+        Can be initialized with a Fraction,
+        a list of items that can construct a MonoFrac,
+        or with a RationalFrac, MonoFrac, int, or float.
         """
         # Copy construction:
-        if isinstance(number, (Fraction, list)):
-            self.neg = bool(number.neg)
+        if isinstance(number, Fraction):
             super(Fraction, self).__init__(number)
 
+        # Initialized with a list:
+        elif isinstance(number, list):
+            mono_fracs = [
+                num if isinstance(num, MF)
+                else MF(num)
+                for num in number]
+            super(Fraction, self).__init__(mono_fracs)
+
         # Construction with a rational-valued fraction:
-        elif isinstance(number, (RF, int, float)):
-            super(Fraction, self).__init__([RF(number), ])
+        elif isinstance(number, (RF, MF, int, float)):
+            super(Fraction, self).__init__([MF(number), ])
 
         # Unexpected argument type:
         else:
             raise TypeError(
-                str(number) + ' invalid. must initialize with one of:\n'
-                'Fraction, RationalFrac, int, float.')
+               f'{str(number)} invalid. must initialize with one of:\n'
+               'Fraction, RationalFrac, int, float.')
+
+    def copy(self):
+        copy =
 
     def simplify(self):
         """ Used to merge MonoFrac items with common irr fields. """
-        common_irr = dict.fromkeys(
-            map(lambda mono: mono.irr, self), MF(0)
-        )
+        terms = []
         for mf in self:
-            common_irr[mf.irr] += mf.rational
-        self.clear()
-        for irr, rational in common_irr:
-            self.append(MF(rational, irr))
+            # Collect the sums of MonoFrac entries with equal irrational parts:
+            same_irr = filter(lambda other: mf.cmp_degree(other), self)
+            term = sum(same_irr, MF(0))
+            if term != 0:
+                terms.append(term)
 
     """
     Public-use, representation/observer methods:
@@ -65,9 +75,17 @@ class Fraction(list):
         return Fraction([mf.__neg__() for mf in self])
 
     def __add__(self, other):
-        fsum = Fraction(super(Fraction, self).__add__(other))
-        fsum.simplify()
-        return fsum
+        if isinstance(other, Fraction):
+            fsum = self.copy()
+            fsum.extend(other)
+            fsum.simplify()
+            return fsum
+        elif isinstance(other, (MF, RF, int, float)):
+            fsum = Fraction(self.append(MF(other)))
+            fsum.simplify()
+            return fsum
+        else:
+            return NotImplemented
 
     def __radd__(self, other):
         pass
@@ -107,7 +125,10 @@ def fraction_tests():
     """ Some small test cases for the Fraction class. """
     print('\n==========================================\n'
           'rfrac.py @ fraction_tests: ///////////////\n')
-    f0 = Fraction()
+    f0 = Fraction(MF(0.125) ** -0.5)
+    f1 = Fraction(MF(0.25))
+    print(f0)
+    print(f0 + f1, f0.extend(f1))
     print('\nrfrac.py @ end of fraction_tests /////////\n'
           '==========================================\n')
 

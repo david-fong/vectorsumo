@@ -75,7 +75,7 @@ class RationalFrac:
 
         # If initialized with a string version of a fraction:
         elif isinstance(numer, str):
-            split = numer.split('/')
+            split = numer.strip().split('/')
             self.__init__(int(split[0]), int(split[1]))
 
         # Unexpected argument as initialization value:
@@ -289,14 +289,13 @@ class RationalFrac:
 
     def __mul__(self, other):
         """ Returns the product of this and another fraction. """
-        if isinstance(other, (RationalFrac, int, float)):
-            f_other = RationalFrac(other) if isinstance(
-                other, (int, float)) else other
-
+        if isinstance(other, (int, float, str)):
+            other = RationalFrac(other)
+        if isinstance(other, RationalFrac):
             prod = RationalFrac(0, empty=True)
-            prod.numer = self.numer + f_other.numer
-            prod.denom = self.denom + f_other.denom
-            prod.neg = not (self.neg == f_other.neg)
+            prod.numer = self.numer + other.numer
+            prod.denom = self.denom + other.denom
+            prod.neg = not (self.neg == other.neg)
             prod.simplify()
             return prod
         else:
@@ -304,13 +303,12 @@ class RationalFrac:
 
     def __imul__(self, other):
         """ Multiplies self by other(a constant) in-place. """
-        if isinstance(other, (RationalFrac, int, float)):
-            f_other = RationalFrac(other) if isinstance(
-                other, (int, float)) else other
-
-            self.numer.extend(f_other.numer)
-            self.denom.extend(f_other.denom)
-            self.neg = not(self.neg == f_other.neg)
+        if isinstance(other, (int, float, str)):
+            other = RationalFrac(other)
+        if isinstance(other, RationalFrac):
+            self.numer.extend(other.numer)
+            self.denom.extend(other.denom)
+            self.neg = not(self.neg == other.neg)
             self.simplify()
             return self
         else:
@@ -318,21 +316,20 @@ class RationalFrac:
 
     def __rmul__(self, other):
         """ Returns the product of this and a constant. """
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, str)):
             return self.__mul__(RationalFrac(other))
         else:
             return NotImplemented
 
     def __truediv__(self, other):
         """ Returns the quotient of this and another fraction. """
-        if isinstance(other, (RationalFrac, int, float)):
-            f_other = RationalFrac(other) if isinstance(
-                other, (int, float)) else other
-
+        if isinstance(other, (int, float, str)):
+            other = RationalFrac(other)
+        if isinstance(other, RationalFrac):
             quot = RationalFrac(0, empty=True)
-            quot.numer = self.numer + f_other.denom
-            quot.denom = self.denom + f_other.numer
-            quot.neg = not (self.neg == f_other.neg)
+            quot.numer = self.numer + other.denom
+            quot.denom = self.denom + other.numer
+            quot.neg = not (self.neg == other.neg)
             quot.simplify()
             return quot
         else:
@@ -340,13 +337,12 @@ class RationalFrac:
 
     def __itruediv__(self, other):
         """ Divides self by other in place. """
-        if isinstance(other, (RationalFrac, int, float)):
-            f_other = RationalFrac(other) if isinstance(
-                other, (int, float)) else other
-
-            self.numer.extend(f_other.denom)
-            self.denom.extend(f_other.numer)
-            self.neg = not(self.neg == f_other.neg)
+        if isinstance(other, (int, float, str)):
+            other = RationalFrac(other)
+        if isinstance(other, RationalFrac):
+            self.numer.extend(other.denom)
+            self.denom.extend(other.numer)
+            self.neg = not(self.neg == other.neg)
             self.simplify()
             return self
         else:
@@ -405,22 +401,22 @@ class RationalFrac:
         Returns True if the fractions are equal in value.
         Assumes the rep invariant that both are fully simplified.
         """
-        if isinstance(other, (RationalFrac, int, float)):
-            f_other = RationalFrac(other) if isinstance(
-                other, (int, float)) else other
-            return (self.numer == f_other.numer and
-                    self.denom == f_other.denom and
-                    self.neg == f_other.neg)
+        if isinstance(other, RationalFrac):
+            return (self.numer == other.numer and
+                    self.denom == other.denom and
+                    self.neg == other.neg)
+        elif isinstance(other, (int, float, str)):
+            return self.__eq__(RationalFrac(other))
         else:
             return NotImplemented
 
     def __lt__(self, other):
         """ Returns True if the fractions are equal in value. """
-        if isinstance(other, (RationalFrac, int, float)):
-            f_other = RationalFrac(other) if isinstance(
-                other, (int, float)) else other
-            # TODO: Test when they are equal.
-            return (self - f_other).neg
+        if isinstance(other, RationalFrac):
+            # NOTE: neg is False when 0 in numer.
+            return (self - other).neg
+        elif isinstance(other, (int, float, str)):
+            return (self - (RationalFrac(other))).neg
         else:
             return NotImplemented
 

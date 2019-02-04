@@ -26,6 +26,11 @@ class MonoFrac:
     maintained by a simplification operation such that none of its
     factors' exponents have equivalent integer values.
 
+    Notes:
+    When summing over a collection of MonoFrac objects, be sure to
+    set the 'start' keyword argument with MonoFrac(0)- otherwise the
+    sum will accumulate in an int.
+
     Special cases:
     If all of the factors of the fraction represented by this
     MonoFrac object have integer exponents, its irr field will be
@@ -41,7 +46,7 @@ class MonoFrac:
 
         IMPORTANT:
         If dict is present and number is of type
-        (RationalFrac, int, float), then it is
+        (RationalFrac, int, float, str), then it is
         assumed to be of type {int: RationalFrac, }
         and is copied by reference into self.irr.
         """
@@ -51,10 +56,17 @@ class MonoFrac:
             self.irr = number.irr.copy()
 
         # Construct with rational fraction or number:
-        elif isinstance(number, (RF, int, float, str)):
+        elif isinstance(number, (RF, int, float)):
             self.rational = RF(number)
             if irr is not None:
                 self.irr = irr
+
+        # Construct with a string:
+        elif isinstance(number, str):
+            factors = [num for num in number.strip().split('*')]
+            self.rational = RF(factors[0].strip('( )'))
+            irr = [i.split('^') for i in factors[1:]]
+            self.irr = {int(fac): RF(exp.strip('( )')) for fac, exp in irr}
 
         # Unexpected arguments:
         else:
@@ -111,8 +123,8 @@ class MonoFrac:
             return not self.irr  # len(self.irr) == 0
         else:
             raise TypeError(
-                'can only compare degrees with '
-                'another MonoFrac object.')
+                'can only compare degrees with another'
+                'Fraction-type or number-type object.')
 
     def __float__(self) -> float:
         return float(self.rational) * irr_prod(self.irr)
@@ -157,6 +169,7 @@ class MonoFrac:
     """
     def __add__(self, other):
         """
+        IMPORTANT:
         Returns the sum of this MonoFrac to other
         as a MonoFrac. If other is also a MonoFrac,
         assumes that self.cmp_degree(other) is True.
@@ -169,8 +182,10 @@ class MonoFrac:
             fsum = self.__copy__()
             fsum.rational += other
             return fsum
-        elif isinstance(other, (int, float)):
-            return self.__add__(MonoFrac(other))
+        elif isinstance(other, (int, float, str)):
+            fsum = self.__copy__()
+            fsum.rational += RF(other)
+            return fsum
         else:
             return NotImplemented
 
@@ -183,11 +198,14 @@ class MonoFrac:
         if isinstance(other, MonoFrac):
             self.rational += other.rational
             return self
-        elif isinstance(other, (RF, int, float)):
+        elif isinstance(other, (RF, int, float, str)):
             self.__iadd__(MonoFrac(other))
             return self
         else:
             return NotImplemented
+
+    def __radd__(self, other):
+        return self.__add__(MonoFrac(other))
 
     def __sub__(self, other):
         """
@@ -232,8 +250,10 @@ class MonoFrac:
         # Multiplication by a RationalFrac, int, or float:
         elif isinstance(other, (RF, int, float)):
             prod = self.__copy__()
-            prod.rational *= other
+            prod.rational *= other if isinstance(other, RF) else RF(other)
             return prod
+        elif isinstance(other, str):
+            return self.__mul__(MonoFrac(other))
 
         else:
             return NotImplemented
@@ -255,7 +275,10 @@ class MonoFrac:
 
         # Multiplication by a RationalFrac, int, or float:
         elif isinstance(other, (RF, int, float)):
-            self.rational *= other
+            self.rational *= other if isinstance(other, RF) else RF(other)
+            return self
+        elif isinstance(other, str):
+            self.__imul__(MonoFrac(other))
             return self
 
         else:
@@ -284,26 +307,33 @@ class MonoFrac:
         # Division by a RationalFrac, int, or float:
         elif isinstance(other, (RF, int, float)):
             quot = self.__copy__()
-            quot.rational /= other
+            quot.rational /= other if isinstance(other, RF) else RF(other)
             return quot
+        elif isinstance(other, str):
+            self.__truediv__(MonoFrac(other))
+            return self
 
         else:
             return NotImplemented
 
     def __pow__(self, exp, modulo=None):
-        """ Returns this fraction to the specified power. """
+        """
+        Returns this fraction to the specified power.
+        Currently, if other is a string, assumes it
+        reconstructs into a RationalFrac object.
+        """
         # If power is an int:
         if isinstance(exp, int):
             power = self.__copy__()
             power.rational **= power
 
         # If power is a RationalFrac:
-        elif isinstance(exp, (RF, float)):
+        elif isinstance(exp, (RF, float, str)):
             power = MonoFrac(1)
             power.irr = self.irr.copy()
             # Check if self is zero:
             if 0 in self.rational.numer:
-                if exp < 0:
+                if RF(exp).neg:
                     raise ZeroDivisionError
                 else:
                     return MonoFrac(0)
@@ -333,6 +363,18 @@ class MonoFrac:
             power.irr[fac] *= exp
         power.simplify()
         return power
+
+    """
+    Rich comparison methods:
+    """
+    def __eq__(self, other):
+        return (
+            self.rational == other.rational
+            and self.cmp_degree(other)
+        ) if isinstance(other, MonoFrac) else (
+            self.rational == RF(other)
+            and not self.irr
+        )
 
     def __mixed_irr(self):
         """
@@ -384,6 +426,9 @@ def mono_fraction_tests():
     f2 = [m ** 0.5 for m in f]
     print(f2)
     print(list(map(str, f2)))
+    print('sum f:', sum(f, MonoFrac(0)))
+    f3 = MonoFrac('((+1/1)*2^(-1/2))')
+    print('reconstruction from repr string:', f3)
     print('\nmfrac.py @ end of mono_fraction_tests ////\n'
           '==========================================\n')
 
