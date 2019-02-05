@@ -25,6 +25,8 @@ class MonoFrac:
     represents the irrational part of the fraction. its value is
     maintained by a simplification operation such that none of its
     factors' exponents have equivalent integer values.
+    -- rational:    rfrac.RationalFrac
+    -- irr:         dict = {}
 
     Notes:
     When summing over a collection of MonoFrac objects, be sure to
@@ -36,8 +38,6 @@ class MonoFrac:
     MonoFrac object have integer exponents, its irr field will be
     an empty dictionary. This includes when the fraction is 0.
     """
-    rational: rfrac.RationalFrac
-    irr: dict = {}
 
     def __init__(self, number, irr: dict = None):
         """
@@ -47,7 +47,7 @@ class MonoFrac:
         IMPORTANT:
         If dict is present and number is of type
         (RationalFrac, int, float, str), then it is
-        assumed to be of type {int: RationalFrac, }
+        assumed to be of type {int: RationalFrac,}
         and is copied by reference into self.irr.
         """
         # Copy construction:
@@ -58,8 +58,7 @@ class MonoFrac:
         # Construct with rational fraction or number:
         elif isinstance(number, (RF, int, float)):
             self.rational = RF(number)
-            if irr is not None:
-                self.irr = irr
+            self.irr = irr if irr is not None else {}
 
         # Construct with a string:
         elif isinstance(number, str):
@@ -325,30 +324,32 @@ class MonoFrac:
         # If power is an int:
         if isinstance(exp, int):
             power = self.__copy__()
-            power.rational **= power
+            power.rational **= exp
 
         # If power is a RationalFrac:
         elif isinstance(exp, (RF, float, str)):
+            exp = RF(exp)
             power = MonoFrac(1)
-            power.irr = self.irr.copy()
+            power.irr = dict(self.irr)
             # Check if self is zero:
             if 0 in self.rational.numer:
-                if RF(exp).neg:
+                if exp.neg:
                     raise ZeroDivisionError
                 else:
-                    return MonoFrac(0)
+                    return MonoFrac(0) if exp != 0 else MonoFrac(1)
             # Move rational numerator to irrational dict:
             for fac in self.rational.numer:
-                try:
+                if fac in power.irr:
                     power.irr[fac] += 1
-                except KeyError:
+                else:
                     power.irr[fac] = RF(1)
             # Move rational denominator to irrational dict:
             for fac in self.rational.denom:
-                try:
+                if fac in power.irr:
                     power.irr[fac] -= 1
-                except KeyError:
+                else:
                     power.irr[fac] = RF(-1)
+            # Not done yet... scroll down.
 
         # If power is MonoFrac:
         elif isinstance(exp, MonoFrac):

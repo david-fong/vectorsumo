@@ -21,12 +21,10 @@ class RationalFrac:
     Consists of two lists of integer-valued prime factors-
     one for the numerator, and one for the denominator.
     Each operation preserves that the fraction is simplified.
-
-    Special cases: self.denom = [] for denominator value = 1.
+    -- numer:   [int, ] = []      empty if numerator is 1.
+    -- denom:   [int, ] = []      empty if denominator is 1.
+    -- neg:     bool = False      True if net sign is negative.
     """
-    numer: [int, ] = []  # empty if numerator is 1
-    denom: [int, ] = []  # empty if denominator is 1
-    neg: bool = False
 
     def __init__(self, numer, denom=1, empty=False):
         """
@@ -425,6 +423,7 @@ def rational_frac_tests():
     """ Some small test cases for the RationalFrac class. """
     print('\n==========================================')
     print('rfrac.py @ rational_frac_tests: //////////\n')
+    print(RationalFrac(-1), RationalFrac(0))
     # __prime_factors()
     frac0 = RationalFrac(4.5)
     frac1 = RationalFrac(-0.125)
