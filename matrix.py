@@ -35,17 +35,30 @@ class Matrix(list):
         self.ncols = len(rows[0])
         super().__init__([vector.Vector(row) for row in rows])
 
+    def append(self, obj):
+        """ Assumes that len(obj) == self.ncols. """
+        self.nrows += 1
+        super(Matrix, self).append(vector.Vector(obj))
+
+    def extend(self, iterable):
+        """
+        Assumes that len(obj) == self.ncols
+        for each obj in iterable.
+        """
+        rows = [vector.Vector(obj) for obj in iterable]
+        self.nrows += len(rows)
+        super(Matrix, self).extend(rows)
+
     def __str__(self):
-        s = ''
         contents = []
         for vec in self:
             contents.extend(vec)
-        width = max(map(lambda frac: len(frac.__str__(' ')), contents))
-        for row in self:
-            rs = ', '.join(map(
-                lambda f: f.__str__(' ').center(width), row))
-            s += '[%s]\n' % rs
-        return s
+        width = max(map(lambda frac: len(frac.__str__()), contents))
+        return '\n'.join([
+            '[%s]' % ', '.join(
+                map(lambda f: f.__str__().center(width), row)
+            ) for row in self
+        ])
 
     def is_square(self):
         return self.nrows == self.ncols
@@ -90,38 +103,55 @@ class Matrix(list):
     Special Matrix operations:
     """
     def transpose(self):
-        """ Reflection of entries along the main diagonal. """
+        """
+        Returns a version of this matrix where all
+        entries are reflected along the main diagonal.
+        """
         t = []
         for c in range(self.ncols):
             t.append([self[r][c] for r in
                       range(self.nrows)])
         return Matrix(t)
 
-    def reduce(self):
+    def add_solution_col(self, solution):
+        """
+        Appends the solution column to
+        the right side of this matrix.
+        """
+        assert len(solution) == self.nrows
+        self.ncols += 1
+        for row in range(self.nrows):
+            self[row].append(solution[row])
+
+    def rref(self):
         """
         Returns the reduced form of self
         """
         red = Matrix(self)
-        free_vars = 0
-        for i in range(self.nrows):
-            # Find a row where the target col is not zero:
-            if float(red[i][i + free_vars]) == 0.0:
-                _i = i + 1
-                while (_i < self.nrows and
-                       float(red[_i][i + free_vars]) == 0.0):
-                    _i += 1
-                if _i == self.nrows:
-                    free_vars += 1
-                    continue
-                # Switch this row with one
-                # where target col is not zero:
-                temp = red[i]
-                red[i] = red[_i]
-                red[_i] = temp
+        free_vars = 0  # Increments when a column is all zeros.
 
-            red[i] *= red[i][i + free_vars].reciprocal()
-            for row in self[i+1:]:
-                row += -row[i + free_vars] * self[i]
+        for r in range(self.nrows):
+            # Find a row where the target by the next column is not zero:
+            target = r
+            while red[target][r + free_vars] == 0:
+                target += 1
+                if target == self.nrows:
+                    free_vars += 1
+                    target = r
+                    if r + free_vars == self.ncols:
+                        return red
+            # Put swap target position to get upper triangular form:
+            zero_row = red[r]
+            red[r] = red[target]
+            red[target] = zero_row
+
+            # Perform reduction on other rows by target:
+            red[r] *= 1 / red[r][r + free_vars]
+            for other_row in red:
+                if other_row is not red[r]:
+                    anti_target_row = other_row[r + free_vars] * red[r]
+                    other_row -= anti_target_row
+        return red
 
     def det(self) -> (RF, None):
         """ Returns the determinant of this matrix if it is square. """
@@ -145,8 +175,8 @@ class Matrix(list):
             # this implies len(cols) is also 1.
             return self[rows[0]][cols[0]]
         else:
-            sign = RF(1)
-            det = RF(0)
+            sign = 1
+            det = 0
             for col in cols:
                 _cols = cols.copy()
                 _cols.remove(col)
@@ -204,15 +234,11 @@ class Matrix(list):
                 for r in range(self.nrows)
             ])
 
-        # Operand 2 is a scalar:
-        elif isinstance(other, (RF, Number)):
-            return self.__rmul__(other)
-
         # Unexpected second operand:
         else:
             return NotImplemented
 
-    def __rmul__(self, other):
+    def __mul__(self, other):
         """
         Multiplies this matrix by a leading scalar.
         Returns the product.
@@ -221,7 +247,7 @@ class Matrix(list):
             prod = []
             # Multiply each vector-row by the scalar
             for r in range(self.nrows):
-                prod.append(self[r].__rmul__(other))
+                prod.append(self[r] * other)
             return Matrix(prod)
         else:
             return NotImplemented
@@ -238,6 +264,7 @@ class Matrix(list):
             return False
         else:
             return all(map(
+                # Delegates to Vector content equality comparison:
                 lambda i: self[i].__eq__(other[i]),
                 list(range(self.nrows))
             ))
@@ -267,20 +294,18 @@ def matrix_tests():
     i5 = Matrix.identity(5)
     i5[0][0] = RF(0.125)
     print(i5)
-    square3_0 = Matrix([
-        [-2, 2, -3],
-        [-1, 1, 3],
-        [2, 0, -1]
-    ])
-    square3_1 = Matrix([
-        [1, 2, 4],
-        [-1, 3, 0],
-        [4, 1, 0]
-    ])
-    print(square3_0)
-    print('actual =', square3_0.det(), 'and expected = 18')
-    print(square3_1)
-    print('actual =', square3_1.det(), 'and expected = -52')
+
+    sqr3_0 = Matrix([[-2, 2, -3], [-1, 1, 3], [2, 0, -1]])
+    print(sqr3_0, '\nactual =', sqr3_0.det(), 'and expected = 18\n')
+
+    sqr3_1 = Matrix([[1, 2, 4], [-1, 3, 0], [4, 1, 0]])
+    print(sqr3_1, '\nactual =', sqr3_1.det(), 'and expected = -52\n')
+
+    rref_ex = Matrix([[1, 2, 3], [2, -1, 1], [3, 0, -1]])
+    rref_soln = [9, 8, 3]
+    rref_ex.add_solution_col(rref_soln)
+    print(rref_ex)
+    print('\nrref =\n', rref_ex.rref())
     print('\nmatrix.py @ end of matrix_tests //////////')
     print('==========================================\n')
 

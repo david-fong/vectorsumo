@@ -66,13 +66,14 @@ class MonoFrac:
             self.rational = RF(factors[0].strip('( )'))
             irr = [i.split('^') for i in factors[1:]]
             self.irr = {int(fac): RF(exp.strip('( )')) for fac, exp in irr}
+            self.simplify()
 
         # Unexpected arguments:
         else:
             raise TypeError(
-                str(number) +
-                ' invalid. must initialize with one of:\n'
-                'Fraction, RationalFrac, int, float.')
+                f'{str(number)} invalid. '
+                f'must initialize with one of:\n'
+                'Fraction, RationalFrac, int, float, str.')
 
     def __copy__(self):
         """ Returns a copy of this MonoFrac object. """
@@ -232,9 +233,9 @@ class MonoFrac:
 
     def __mul__(self, other):
         """ Returns the product of this and another number. """
+        prod = self.__copy__()
         # Multiplication by another MonoFrac:
         if isinstance(other, MonoFrac):
-            prod = self.__copy__()
             prod.rational *= other.rational
 
             # Factor in irrational factors from both self and other:
@@ -244,18 +245,18 @@ class MonoFrac:
                 else:
                     prod.irr[fac] = exp.__copy__()
             prod.simplify()
-            return prod
 
-        # Multiplication by a RationalFrac, int, or float:
-        elif isinstance(other, (RF, int, float)):
-            prod = self.__copy__()
-            prod.rational *= other if isinstance(other, RF) else RF(other)
-            return prod
+        # Multiplication by a RationalFrac, int, float, or str:
+        elif isinstance(other, RF):
+            prod.rational *= other
+        elif isinstance(other, (int, float)):
+            prod.rational *= RF(other)
         elif isinstance(other, str):
             return self.__mul__(MonoFrac(other))
-
         else:
             return NotImplemented
+
+        return prod
 
     def __imul__(self, other):
         """ Multiplies self by other in-place. """
@@ -270,18 +271,19 @@ class MonoFrac:
                 else:
                     self.irr[fac] = exp.__copy__()
             self.simplify()
-            return self
 
         # Multiplication by a RationalFrac, int, or float:
-        elif isinstance(other, (RF, int, float)):
-            self.rational *= other if isinstance(other, RF) else RF(other)
+        elif isinstance(other, RF):
+            self.rational *= other
             return self
+        elif isinstance(other, (int, float)):
+            self.rational *= RF(other)
         elif isinstance(other, str):
             self.__imul__(MonoFrac(other))
-            return self
-
         else:
             return NotImplemented
+
+        return self
 
     def __rmul__(self, other):
         """ Returns the product of this and a number. """
@@ -289,11 +291,10 @@ class MonoFrac:
 
     def __truediv__(self, other):
         """ Returns the quotient of this and another fraction. """
+        quot = self.__copy__()
         # Division by another MonoFrac:
         if isinstance(other, MonoFrac):
-            quot = self.__copy__()
             quot.rational /= other.rational
-
             # Factor in irrational factors from both self and other:
             for fac, exp in other.irr.items():
                 if fac in quot.irr:
@@ -301,20 +302,22 @@ class MonoFrac:
                 else:
                     quot.irr[fac] = -exp.__copy__()
             quot.simplify()
-            return quot
 
         # Division by a RationalFrac, int, or float:
-        elif isinstance(other, (RF, int, float)):
-            quot = self.__copy__()
-            quot.rational /= other if isinstance(other, RF) else RF(other)
-            return quot
+        elif isinstance(other, RF):
+            quot.rational /= other
+        elif isinstance(other, (int, float)):
+            quot.rational /= RF(other)
         elif isinstance(other, str):
-            self.__truediv__(MonoFrac(other))
-            return self
-
+            quot = self.__truediv__(MonoFrac(other))
         else:
             return NotImplemented
 
+        return quot
+
+    """
+    Powers:
+    """
     def __pow__(self, exp, modulo=None):
         """
         Returns this fraction to the specified power.
@@ -425,7 +428,7 @@ def mono_fraction_tests():
          MonoFrac(0.125), MonoFrac(8)]
     print(f)
     f2 = [m ** 0.5 for m in f]
-    print(f2)
+    print(f2, 'copy to\n', [MonoFrac(m) for m in f2])
     print(list(map(str, f2)))
     print('sum f:', sum(f, MonoFrac(0)))
     f3 = MonoFrac('((+1/1)*2^(-1/2))')

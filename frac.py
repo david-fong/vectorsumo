@@ -19,7 +19,8 @@ class Fraction:
         can construct a MonoFrac, or with one of RationalFrac,
         MonoFrac, int, or float. If a list or Fraction is given
         as an argument, assumes that it represents a simplified
-        Fraction.
+        Fraction with MonoFrac typed contents. A list is copied
+        by reference.
         """
         self.terms = []
         # Copy construction:
@@ -28,18 +29,19 @@ class Fraction:
 
         # Initialized with a list:
         elif isinstance(number, list):
-            self.terms = [MF(num) for num in number]
+            self.terms = number
 
         # Construction with a rational-valued fraction:
         elif isinstance(number, (MF, RF, int, float, str)):
             self.terms.append(MF(number))
-            print('terms:', self.terms)
 
         # Unexpected argument type:
         else:
             raise TypeError(
-               f'{str(number)} invalid. must initialize with one of:\n'
-               'Fraction, RationalFrac, int, float.')
+               f'{str(number)} invalid. '
+               'must initialize with one of:\n'
+               'Fraction, list, MonoFrac, '
+               'RationalFrac, int, float, str.')
 
     def simplify(self):
         """ Used to merge MonoFrac items with common irr fields. """
@@ -79,14 +81,18 @@ class Fraction:
     Addition, and Subtraction:
     """
     def __add__(self, other):
+        fsum = Fraction(self)
+
         if isinstance(other, Fraction):
-            fsum = Fraction(self)
             fsum.terms.extend(other.terms)
+
         elif isinstance(other, (MF, RF, int, float)):
-            fsum = Fraction(self)
+            # TODO: perhaps move simplify to first condition
+            #  and perform cmp_degree here instead. Same at iadd.
             fsum.terms.append(MF(other))
         else:
             return NotImplemented
+
         fsum.simplify()
         return fsum
 
@@ -101,14 +107,15 @@ class Fraction:
         return self
 
     def __sub__(self, other):
+        fsum = Fraction(self)
+
         if isinstance(other, Fraction):
-            fsum = Fraction(self)
             fsum.terms.extend([mf.__neg__() for mf in other.terms])
         elif isinstance(other, (MF, RF, int, float)):
-            fsum = Fraction(self)
             fsum.terms.append(MF(other).__neg__())
         else:
             return NotImplemented
+
         fsum.simplify()
         return fsum
 
@@ -129,21 +136,39 @@ class Fraction:
         return Fraction([mf.__neg__() for mf in self.terms])
 
     def __mul__(self, other):
+        prod = []
         if isinstance(other, Fraction):
-            pass
-        elif isinstance(other, (int, float, int, str)):
-            pass
+            for t1 in self.terms:
+                prod.extend([t1 * t2 for t2 in other.terms])
+
+        elif isinstance(other, (MF, str)):
+            f_other = other if isinstance(other, MF) else MF(other)
+            prod.extend(mf.__mul__(f_other) for mf in self.terms)
+
+        elif isinstance(other, (RF, int, float, int)):
+            f_other = other if isinstance(other, RF) else RF(other)
+            prod.extend(mf.__mul__(f_other) for mf in self.terms)
         else:
             return NotImplemented
 
-    def __rmul__(self, other):
+        prod = Fraction(prod)
+        prod.simplify()
+        return prod
+
+    def __imul__(self, other):
         pass
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
     def __truediv__(self, other):
-        pass
+        raise NotImplementedError
 
+    """
+    Modulus and powers:
+    """
     def __pow__(self, power, modulo=None):
-        pass
+        raise NotImplementedError
 
     """
     Rich comparison methods:
@@ -159,12 +184,15 @@ def fraction_tests():
     """ Some small test cases for the Fraction class. """
     print('\n==========================================\n'
           'rfrac.py @ fraction_tests: ///////////////\n')
-    print('sqrt(8):', MF(0.125) ** -0.5)
+    m0 = MF(0.125) ** -0.5
+    print('sqrt(8):', m0)
     print('1/4:', MF(0.25))
-    f0 = Fraction(MF(0.125) ** -0.5)
+    f0 = Fraction(m0)
     f1 = Fraction(MF(0.25))
-    print(f0)
-    print(f0 + f1)
+    f2 = f0 + f1
+    print(f2.terms)
+    print(f2, 'x2 =', 2 * f2)
+    print(f2 * f2)
     print('\nrfrac.py @ end of fraction_tests /////////\n'
           '==========================================\n')
 

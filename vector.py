@@ -33,40 +33,60 @@ class Vector(list):
         """ Performs type-checking and appropriate conversions. """
         if isinstance(value, RF):
             super().__setitem__(key, value)
-        elif isinstance(value, (int, float)):
+        elif isinstance(value, (int, float, str)):
             super().__setitem__(key, RF(value))
         else:
             raise TypeError(
-                'can only set int, float, or ' +
+                f'{type(value)} invalid.\n'
+                'can only set int, float, or \n'
                 'RationalFrac type objects in Vector.')
+
+    def append(self, obj):
+        super(Vector, self).append(RF(obj))
+
+    def extend(self, iterable):
+        super(Vector, self).extend([RF(obj) for obj in iterable])
 
     def __add__(self, other):
         if isinstance(other, (Vector, list, tuple)):
-            if len(self) != len(other):
-                raise matrix.MatrixSizeError(
-                    'cannot add vectors: unequal lengths.')
-            else:
+            if len(self) == len(other):
                 return Vector([
                     self[i] + other[i]
                     for i in range(len(self))
                 ])
+            else:
+                raise matrix.MatrixSizeError(
+                    'cannot add vectors of unequal lengths.')
         else:
             return NotImplemented
 
     def __iadd__(self, other):
         if isinstance(other, Vector):
-            if len(self) != len(other):
-                raise matrix.MatrixSizeError(
-                    'cannot add vectors: unequal lengths.')
-            else:
+            if len(self) == len(other):
                 for i in range(len(self)):
-                    self[i] = self[i] + other
+                    self[i] += other[i]
+                return self
+            else:
+                raise matrix.MatrixSizeError(
+                    'cannot add vectors of unequal lengths.')
         else:
             return NotImplemented
 
     def __radd__(self, other):
-        if isinstance(other, list):
-            return self.__add__(other)
+        return self.__add__(other)
+
+    def __isub__(self, other):
+        """ Subtracts entries of other from entries of self in place. """
+        if isinstance(other, (list, tuple, Vector)):
+            if len(other) == len(self):
+                for i in range(len(self)):
+                    self[i] -= other[i]
+                return self
+            else:
+                raise matrix.MatrixSizeError(
+                    'cannot subtract vectors of unequal lengths.')
+        else:
+            return NotImplemented
 
     def norm(self):
         """ Returns the 'length' of the vector. """
@@ -125,11 +145,15 @@ class Vector(list):
         else:
             raise matrix.MatrixSizeError('vector lengths incompatible.')
 
-    def __mul__(self, *others):
-        """ Vector cross product. """
-        if isinstance(others[0], (int, float, RF)):
-            return self.__rmul__(others[0])
+    def __neg__(self):
+        """
+        Returns a copy of self where each entry's
+        sign is its original's flipped version.
+        """
+        return Vector([-num for num in self])
 
+    def __matmul__(self, *others):
+        """ Vector cross product. """
         # TODO: reconsider *others:
         #  not suited for parsing user expressions.
         if len(others) != len(self) - 2:
@@ -157,7 +181,7 @@ class Vector(list):
             cross.append(mtx[0][c] * mtx.recursive_det(rows, _cols))
         return Vector(cross)
 
-    def __rmul__(self, other):
+    def __mul__(self, other):
         """ Scalar multiplication. """
         if isinstance(other, RF):
             return Vector([
@@ -171,6 +195,9 @@ class Vector(list):
         else:
             return NotImplemented
 
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
     def __eq__(self, other):
         """
         Checks if all corresponding pairs of
@@ -182,7 +209,8 @@ class Vector(list):
             return False
         else:
             return all(map(
-                lambda i: self[i].__eq__(other[i]),
+                # Delegates to entry-type content equality comparison:
+                lambda i: self[i] == other[i],
                 list(range(len(self)))
             ))
 
@@ -192,8 +220,14 @@ def vector_tests():
           'vector.py @ vector_tests: ////////////////\n')
     vec1 = Vector([0, 0.5, 2])
     print(vec1)
-    print(vec1 * vec1)
+    print(vec1 @ vec1)
     print([0, 1, RF(5, 7)] + vec1)
+
+    vec1 -= [1, 1, 1]
+    print('in place subtraction test:', vec1)
+    print('neg test:', -vec1)
+    vec1 *= 2.5
+    print('in place multiplication test:', vec1)
     print('\nvector.py @ end of vector_tests //////////\n'
           '==========================================\n')
 

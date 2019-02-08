@@ -34,6 +34,10 @@ class RationalFrac:
         If numer is a float, assumes denom is 1.
         The empty parameter should only be used privately.
         """
+        self.numer = []
+        self.denom = []
+        self.neg = False
+
         # Initialize with no contents:
         # For private use only.
         if empty:
@@ -78,9 +82,10 @@ class RationalFrac:
 
         # Unexpected argument as initialization value:
         else:
-            raise TypeError(
-                'could not create a rational '
-                'fraction with the given parameters')
+            TypeError(
+                f'{str(numer)} invalid. '
+                f'must initialize with one of:\n'
+                'int, float, str.')
 
         # If successful, cleanup:
         self.simplify()
@@ -184,7 +189,7 @@ class RationalFrac:
             return int(self.__float__())
 
     def __str__(self, fmt='') -> str:
-        s = '-' if self.neg else ' ' if ' ' in fmt else ''
+        s = '-' if self.neg else ' '  # if ' ' in fmt else ''
         if 0 in self.numer:
             s += '0'
         elif 0 in self.denom:
@@ -282,7 +287,7 @@ class RationalFrac:
 
     def __neg__(self):
         negated = self.__copy__()
-        negated.neg = not self.neg if (0 in self.numer) else False
+        negated.neg = False if (0 in self.numer) else not self.neg
         return negated
 
     def __mul__(self, other):
@@ -332,6 +337,10 @@ class RationalFrac:
             return quot
         else:
             return NotImplemented
+
+    def __rtruediv__(self, other):
+        """ Returns other / self as a RationalFraction. """
+        return RationalFrac(other).__imul__(self.reciprocal())
 
     def __itruediv__(self, other):
         """ Divides self by other in place. """
@@ -439,6 +448,7 @@ def rational_frac_tests():
           RationalFrac(-0) + RationalFrac(-0))
     f3 = RationalFrac('-7/29')
     print(f3)
+    print(RationalFrac(25, 1000))
     print('\nrfrac.py @ end of rational_frac_tests ////')
     print('==========================================\n')
 
